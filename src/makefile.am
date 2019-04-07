@@ -1,0 +1,12 @@
+bin_PROGRAMS = fqtool
+
+fqtool_LDADD = \
+	       $(LDFLAGS)
+
+fqtool_SOURCES = adaptertrimmer.cpp basecorrector.cpp duplicate.cpp evaluator.cpp \
+		 filter.cpp filterresult.cpp fqreader.cpp htmlreporter.cpp jsonreporter.cpp \
+		 main.cpp nucleotidetree.cpp options.cpp overlapanalysis.cpp peprocessor.cpp \
+		 polyx.cpp processor.cpp read.cpp seprocessor.cpp stats.cpp threadconfig.cpp \
+		 umiprocessor.cpp writer.cpp writerthread.cpp
+clean:
+	rm -rf .deps Makefile.in Makefile *.o ${bin_PROGRAMS}
