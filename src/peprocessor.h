@@ -51,9 +51,12 @@ class PairEndProcessor{
          */
         bool process();
 
-    //private:
+        /** process a ReadPairPack 
+         * @param pack pointer to ReadPairPack
+         * @param config pointer to ThreadConfig
+         * @return true if finish process
+         */
         bool processPairEnd(ReadPairPack* pack, ThreadConfig* config);
-        bool processRead(Read* r, ReadPair* originalRead, bool reversed);
         
         /** initialize ReadPairPackRepository\n
          * allocate memory to store at most COMMONCONST::MAX_PACKS_IN_READPACKREPO ReadPairPack pointers
@@ -87,7 +90,7 @@ class PairEndProcessor{
         void consumerTask(ThreadConfig* config);
 
         /** initialize a thread for process read pairs
-         * @param conifg poiter to ThreadConcig
+         * @param config poiter to ThreadConcig
          */
         void initConfig(ThreadConfig* config);
 

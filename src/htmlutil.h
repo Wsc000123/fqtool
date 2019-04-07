@@ -111,11 +111,11 @@ namespace htmlutil{
      * @param ofs reference of std::ofstream
      * @param comment comment string
      */
-    inline void printFooter(std::ofstream& ofs, const std::string& commentStr){
+    inline void printFooter(std::ofstream& ofs, const std::string& comment){
         ofs << "\n</div>" << std::endl;
         ofs << "<div id='footer'> ";
-        ofs << commentStr << std::endl;
-        ofs << "date: " << getCurrentSystemTime() << " </div>";
+        ofs << comment << std::endl;
+        ofs << " @ " << getCurrentSystemTime() << " </div>";
         ofs << "</body></html>";
     }
 

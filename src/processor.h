@@ -9,7 +9,7 @@
 /** class to do se/pe processing */
 class Processor{
     public:
-        /* construct a Processor object 
+        /** construct a Processor object 
          * @param opt pointer to Options object
          */
         Processor(Options* opt);
