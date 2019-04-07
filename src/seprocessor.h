@@ -30,8 +30,8 @@ struct ReadPack{
 /** Struct to hold a bunch of ReadPack pointers */
 struct ReadPackRepository{
     ReadPack** packBuffer;        ///< array to store ReadPack pointers
-    std::atomic<long> readPos;    ///< the index in packBuffer next ReadPack pointer should read from
-    std::atomic<long> writePos;   ///< the index in packBuffer next ReadPack pointer should put into
+    std::atomic<size_t> readPos;    ///< the index in packBuffer next ReadPack pointer should read from
+    std::atomic<size_t> writePos;   ///< the index in packBuffer next ReadPack pointer should put into
 };
 
 /** class to deal with single end fastq processing */

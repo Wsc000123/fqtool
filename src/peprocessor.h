@@ -31,8 +31,8 @@ struct ReadPairPack {
 /** struct to store pointers of ReadPairPack */
 struct ReadPairPackRepository{
     ReadPairPack** packBuffer;  ///< array to store ReadPairPack pointers
-    std::atomic<long> readPos;  ///< atomic type long integer to store the index next pointer of ReadPairPack will be extracted
-    std::atomic<long> writePos; ///< atomic type long integer to store the index next pointer of ReadPairPack will be writen in
+    std::atomic<size_t> readPos;  ///< atomic type long integer to store the index next pointer of ReadPairPack will be extracted
+    std::atomic<size_t> writePos; ///< atomic type long integer to store the index next pointer of ReadPairPack will be writen in
 };
 
 /** class to process pair end fastq */

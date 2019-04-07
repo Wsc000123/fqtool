@@ -64,8 +64,13 @@ bool PairEndProcessor::process(){
     if(!mOptions->split.enabled){
         initOutput();
     }
+    util::loginfo("initReadPairPackRepository started", mOptions->logmtx);
     initReadPairPackRepository();
+    util::loginfo("initReadPairPackRepository finished", mOptions->logmtx);
+    util::loginfo("producerTask thread started", mOptions->logmtx);
     std::thread producer(&PairEndProcessor::producerTask, this);
+    util::loginfo("producerTask thread running in background", mOptions->logmtx);
+    util::loginfo("construct " + std::to_string(mOptions->thread) + " threads to consumeTask started", mOptions->logmtx);
     ThreadConfig** configs = new ThreadConfig*[mOptions->thread];
     for(int t = 0; t < mOptions->thread; ++t){
         configs[t] = new ThreadConfig(mOptions, t, true);
@@ -73,25 +78,34 @@ bool PairEndProcessor::process(){
     }
     std::thread** threads = new std::thread*[mOptions->thread];
     for(int t = 0; t < mOptions->thread; ++t){
-        threads[t] = new std::thread(&PairEndProcessor::consumePack, this, configs[t]);
+        threads[t] = new std::thread(&PairEndProcessor::consumerTask, this, configs[t]);
     }
+    util::loginfo("construct " + std::to_string(mOptions->thread) + " threads to consumeTask finished", mOptions->logmtx);
     std::thread* leftWriterThread = NULL;
     std::thread* rightWriterThread = NULL;
     if(mLeftWriter){
         leftWriterThread = new std::thread(&PairEndProcessor::writeTask, this, mLeftWriter);
+        util::loginfo("read1 writer thread constructed", mOptions->logmtx);
     }
     if(mRightWriter){
         rightWriterThread = new std::thread(&PairEndProcessor::writeTask, this, mRightWriter);
+        util::loginfo("read2 writer thread constructed", mOptions->logmtx);
     }
     producer.join();
+    util::loginfo("producer thread finished work and joined", mOptions->logmtx);
     for(int t = 0; t < mOptions->thread; ++t){
         threads[t]->join();
     }
+    util::loginfo("process threads finished work and joined", mOptions->logmtx);
+
     if(leftWriterThread){
         leftWriterThread->join();
+        util::loginfo("left thread for writing finished work and joined", mOptions->logmtx);
     }
     if(rightWriterThread){
         rightWriterThread->join();
+        util::loginfo("right thread for writing finished work and joined", mOptions->logmtx);
+
     }
     if(mOptions->verbose){
         util::loginfo("start to generate reports\n", mOptions->logmtx);
@@ -354,32 +368,59 @@ void PairEndProcessor::destroyReadPairPackRepository(){
 }
 
 void PairEndProcessor::producePack(ReadPairPack* pack){
-    while(mRepo.writePos >= mOptions->bufSize.maxPacksInMemory){
-        sleep(60);
+    util::loginfo("producePack started wait: mRepo.writePos = " + std::to_string(mRepo.writePos), mOptions->logmtx);
+    if(mRepo.writePos >= mOptions->bufSize.maxPacksInReadPackRepo){
+        util::loginfo("RING BUFFER LIMIT REACHED ", mOptions->logmtx);
     }
+    while(mRepo.writePos >= mOptions->bufSize.maxPacksInReadPackRepo){
+        util::loginfo("BUFFRESET?: mRepo.writePos = " + std::to_string(mRepo.writePos), mOptions->logmtx);
+        usleep(1000);
+    }
+    util::loginfo("producePack started prod: mRepo.writePos = " + std::to_string(mRepo.writePos), mOptions->logmtx);
     mRepo.packBuffer[mRepo.writePos] = pack;
     ++mRepo.writePos;
+    util::loginfo("producePack finished prod: mRepo.writePos = " + std::to_string(mRepo.writePos), mOptions->logmtx);
 }
 
 void PairEndProcessor::consumePack(ThreadConfig* config){
     mInputMtx.lock();
+    util::loginfo("thread " + std::to_string(config->getThreadId()) + " locked mInputMtx", mOptions->logmtx);
     while(mRepo.writePos <= mRepo.readPos){
+        if(mRepo.writePos == mRepo.readPos && mRepo.writePos >= mOptions->bufSize.maxPacksInReadPackRepo){
+            util::loginfo("thread " + std::to_string(config->getThreadId()) + " read the last ReadPairPack in mRepo.packBuffer", mOptions->logmtx);
+            mRepo.readPos = mRepo.readPos %  mOptions->bufSize.maxPacksInReadPackRepo;
+            mRepo.writePos = mRepo.writePos % mOptions->bufSize.maxPacksInReadPackRepo;
+            util::loginfo("thread " + std::to_string(config->getThreadId()) + " reset mRepo.readPos = " + std::to_string(mRepo.readPos) 
+                + "and mRepo.writePos = " + std::to_string(mRepo.writePos), mOptions->logmtx);
+        }
         usleep(1000);
         if(mProduceFinished){
             mInputMtx.unlock();
+            util::loginfo("thread " + std::to_string(config->getThreadId()) + " unlock mInputMtx, mProduceFinished is true" +
+                    " mRepo.writePos = " + std::to_string(mRepo.writePos) + " mRepo.readPos = " + std::to_string(mRepo.readPos), mOptions->logmtx);
             return;
         }
     }
     ReadPairPack* data = mRepo.packBuffer[mRepo.readPos];
+    util::loginfo("thread " + std::to_string(config->getThreadId()) + " get ReadPairPack ad " + std::to_string(mRepo.readPos) + " of mRepo.packBuffer", mOptions->logmtx);
     ++mRepo.readPos;
     if(mRepo.readPos >= mOptions->bufSize.maxPacksInReadPackRepo){
+        util::loginfo("thread " + std::to_string(config->getThreadId()) + " read the last ReadPairPack in mRepo.packBuffer", mOptions->logmtx);
         mRepo.readPos = mRepo.readPos %  mOptions->bufSize.maxPacksInReadPackRepo;
         mRepo.writePos = mRepo.writePos % mOptions->bufSize.maxPacksInReadPackRepo;
+        util::loginfo("thread " + std::to_string(config->getThreadId()) + " reset mRepo.readPos = " + std::to_string(mRepo.readPos) 
+                + "and mRepo.writePos = " + std::to_string(mRepo.writePos), mOptions->logmtx);
+        util::loginfo("thread " + std::to_string(config->getThreadId()) + " reset mreop.readPos and mRepo.writePos and started to process ReadPairPack", mOptions->logmtx); 
         processPairEnd(data, config);
+        util::loginfo("thread " + std::to_string(config->getThreadId()) + " reset mreop.readPos and mRepo.writePos and finished processing ReadPairPack", mOptions->logmtx);
         mInputMtx.unlock();
+        util::loginfo("thread " + std::to_string(config->getThreadId()) + " reset mreop.readPos and mRepo.writePos and finished processing ReadPairPack and unlock mInputMtx", mOptions->logmtx);
     }else{
+        util::loginfo("thread " + std::to_string(config->getThreadId()) + " unlock mInputMtx", mOptions->logmtx);
         mInputMtx.unlock();
+        util::loginfo("thread " + std::to_string(config->getThreadId()) + " started to process ReadPairPack", mOptions->logmtx);
         processPairEnd(data, config);
+        util::loginfo("thread " + std::to_string(config->getThreadId()) + " finished processing ReadPairPack", mOptions->logmtx);
     }
 }
 
@@ -387,19 +428,18 @@ void PairEndProcessor::producerTask(){
     if(mOptions->verbose){
         util::loginfo("start to load data", mOptions->logmtx);
     }
-    long lastReported = 0;
-    int slept = 0;
-    long readNum = 0;
+    size_t lastReported = 0;
+    size_t slept = 0;
+    size_t readNum = 0;
     ReadPair** data = new ReadPair*[mOptions->bufSize.maxReadsInPack];
     std::memset(data, 0, sizeof(ReadPair*) * mOptions->bufSize.maxReadsInPack);
-    std::cout << "in1:" << mOptions->in1 << "\n";
-    std::cout << "in2:" << mOptions->in2 << "\n";
     FqReaderPair reader(mOptions->in1, mOptions->in2, true, mOptions->phred64, mOptions->interleavedInput);
-    int count = 0;
+    size_t count = 0;
     bool needToBreak = false;
     while(true){
         ReadPair* readPair = reader.read();
         if(!readPair || needToBreak){
+            util::loginfo("end of file reached, mReop.writePos = " + std::to_string(mRepo.writePos) + " mReop.readPos = " + std::to_string(mRepo.readPos), mOptions->logmtx);
             ReadPairPack* pack = new ReadPairPack;
             pack->data = data;
             pack->count = count;
@@ -421,13 +461,13 @@ void PairEndProcessor::producerTask(){
             std::string msg = "loaded " + std::to_string(lastReported/1000000) + "M";
             util::loginfo(msg, mOptions->logmtx);
         }
-        if(count == mOptions->bufSize.maxPacksInReadPackRepo || needToBreak){
+        if(count == mOptions->bufSize.maxReadsInPack || needToBreak){
             ReadPairPack* pack = new ReadPairPack;
             pack->data = data;
             pack->count = count;
             producePack(pack);
-            data = new ReadPair*[mOptions->bufSize.maxPacksInReadPackRepo];
-            std::memset(data, 0, sizeof(ReadPair*) * mOptions->bufSize.maxPacksInReadPackRepo);
+            data = new ReadPair*[mOptions->bufSize.maxReadsInPack];
+            std::memset(data, 0, sizeof(ReadPair*) * mOptions->bufSize.maxReadsInPack);
             while(mRepo.writePos - mRepo.readPos > mOptions->bufSize.maxPacksInMemory){
                 ++slept;
                 usleep(1000);
@@ -442,8 +482,8 @@ void PairEndProcessor::producerTask(){
             }
             count = 0;
         }
-        mProduceFinished = true;
     }
+    mProduceFinished = true;
     if(mOptions->verbose){
         util::loginfo("all reads loaded, start to monitor thread status", mOptions->logmtx);
     }
@@ -475,8 +515,8 @@ void PairEndProcessor::consumerTask(ThreadConfig* config){
                                   std::to_string(mRepo.readPos) + " / " + std::to_string(mRepo.writePos) + " pack";
                 util::loginfo(msg, mOptions->logmtx);
             }
-            consumePack(config);
         }
+        consumePack(config);
     }
     if(mFinishedThreads == mOptions->thread){
         if(mLeftWriter){
@@ -494,10 +534,12 @@ void PairEndProcessor::consumerTask(ThreadConfig* config){
 }
 
 void PairEndProcessor::writeTask(WriterThread* config){
+    util::loginfo("start this WriterThread now", mOptions->logmtx);
     while(true){
         if(config->isCompleted()){
             config->output();
             break;
+            util::loginfo("finish this WriterThread and break out", mOptions->logmtx);
         }
         config->output();
     }

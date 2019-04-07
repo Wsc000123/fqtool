@@ -13,9 +13,9 @@
 
 /** struct to store buffer options */
 struct BufferSizeOptions{
-    int maxPacksInReadPackRepo; ///< max number of ReadPacks a ReadPackRepository can hold
-    int maxReadsInPack;         ///< max number of reads a ReadPack can hold
-    int maxPacksInMemory;       ///< max number of ReadPacks in memory allowed
+    size_t maxPacksInReadPackRepo; ///< max number of ReadPacks a ReadPackRepository can hold
+    size_t maxReadsInPack;         ///< max number of reads a ReadPack can hold
+    size_t maxPacksInMemory;       ///< max number of ReadPacks in memory allowed
     BufferSizeOptions(){
         maxPacksInReadPackRepo = 1000;
         maxReadsInPack = 1000;
@@ -305,7 +305,7 @@ struct Options{
     bool inputFromSTDIN;          ///< read from STDIN
     bool outputToSTDOUT;          ///< write to STDOUT
     bool interleavedInput;        ///< the input read1(in1) file is an interleaved PE fastq
-    int readsToProcess;           ///< number of reads to process
+    size_t readsToProcess;           ///< number of reads to process
     int thread;                   ///< number of threads to do paralel work
     bool verbose;                 ///< output debug information if true
     int insertSizeMax;            ///< maximum value of insert size

@@ -62,7 +62,7 @@ void SingleEndProcessor::destroyReadPackRepository(){
 
 void SingleEndProcessor::producePack(ReadPack* pack){
     while(mRepo.writePos ==  mOptions->bufSize.maxPacksInReadPackRepo){
-        usleep(60);
+        usleep(1000);
     }
     mRepo.packBuffer[mRepo.writePos] = pack;
     ++mRepo.writePos;
@@ -72,13 +72,13 @@ void SingleEndProcessor::producerTask(){
     if(mOptions->verbose){
         util::loginfo("start to load data", mOptions->logmtx);
     }
-    long lastReported = 0; // total number of reads have been loaded into memory
+    size_t lastReported = 0; // total number of reads have been loaded into memory
     int slept = 0;  // #sleep happened
-    long readNum = 0;  // total number of reads have been loaded into memory and put into mReop
+    size_t readNum = 0;  // total number of reads have been loaded into memory and put into mReop
     Read** data = new Read*[mOptions->bufSize.maxReadsInPack];
     std::memset(data, 0, sizeof(Read*) * mOptions->bufSize.maxReadsInPack);
     FqReader reader(mOptions->in1, true, mOptions->phred64);
-    int count = 0; // number of reads have been loaded into memory and put into data but not mReop 
+    size_t count = 0; // number of reads have been loaded into memory and put into data but not mReop 
     bool needToBreak = false;
     while(true){
         Read* read = reader.read();
@@ -93,6 +93,7 @@ void SingleEndProcessor::producerTask(){
                 delete read;
                 read = NULL;
             }
+            mProduceFinished = true;
             break;
         }
         data[count] = read;
