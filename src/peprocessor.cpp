@@ -342,8 +342,8 @@ void PairEndProcessor::statInsertSize(Read* r1, Read* r2, OverlapResult& ov){
 }
 
 void PairEndProcessor::initReadPairPackRepository(){
-    mRepo.packBuffer = new ReadPairPack*[COMMONCONST::MAX_PACKS_IN_READPACKREPO];
-    std::memset(mRepo.packBuffer, 0, sizeof(ReadPairPack*) * COMMONCONST::MAX_PACKS_IN_READPACKREPO);
+    mRepo.packBuffer = new ReadPairPack*[mOptions->bufSize.maxPacksInReadPackRepo];
+    std::memset(mRepo.packBuffer, 0, sizeof(ReadPairPack*) * mOptions->bufSize.maxPacksInReadPackRepo);
     mRepo.writePos = 0;
     mRepo.readPos = 0;
 }
@@ -354,7 +354,7 @@ void PairEndProcessor::destroyReadPairPackRepository(){
 }
 
 void PairEndProcessor::producePack(ReadPairPack* pack){
-    while(mRepo.writePos >= COMMONCONST::MAX_PACKS_IN_MEMORY){
+    while(mRepo.writePos >= mOptions->bufSize.maxPacksInMemory){
         sleep(60);
     }
     mRepo.packBuffer[mRepo.writePos] = pack;
@@ -372,9 +372,9 @@ void PairEndProcessor::consumePack(ThreadConfig* config){
     }
     ReadPairPack* data = mRepo.packBuffer[mRepo.readPos];
     ++mRepo.readPos;
-    if(mRepo.readPos >= COMMONCONST::MAX_PACKS_IN_READPACKREPO){
-        mRepo.readPos = mRepo.readPos %  COMMONCONST::MAX_PACKS_IN_READPACKREPO;
-        mRepo.writePos = mRepo.writePos % COMMONCONST::MAX_PACKS_IN_READPACKREPO;
+    if(mRepo.readPos >= mOptions->bufSize.maxPacksInReadPackRepo){
+        mRepo.readPos = mRepo.readPos %  mOptions->bufSize.maxPacksInReadPackRepo;
+        mRepo.writePos = mRepo.writePos % mOptions->bufSize.maxPacksInReadPackRepo;
         processPairEnd(data, config);
         mInputMtx.unlock();
     }else{
@@ -390,8 +390,10 @@ void PairEndProcessor::producerTask(){
     long lastReported = 0;
     int slept = 0;
     long readNum = 0;
-    ReadPair** data = new ReadPair*[COMMONCONST::MAX_READS_IN_PACK];
-    std::memset(data, 0, sizeof(ReadPair*) * COMMONCONST::MAX_READS_IN_PACK);
+    ReadPair** data = new ReadPair*[mOptions->bufSize.maxReadsInPack];
+    std::memset(data, 0, sizeof(ReadPair*) * mOptions->bufSize.maxReadsInPack);
+    std::cout << "in1:" << mOptions->in1 << "\n";
+    std::cout << "in2:" << mOptions->in2 << "\n";
     FqReaderPair reader(mOptions->in1, mOptions->in2, true, mOptions->phred64, mOptions->interleavedInput);
     int count = 0;
     bool needToBreak = false;
@@ -419,21 +421,21 @@ void PairEndProcessor::producerTask(){
             std::string msg = "loaded " + std::to_string(lastReported/1000000) + "M";
             util::loginfo(msg, mOptions->logmtx);
         }
-        if(count == COMMONCONST::MAX_PACKS_IN_READPACKREPO || needToBreak){
+        if(count == mOptions->bufSize.maxPacksInReadPackRepo || needToBreak){
             ReadPairPack* pack = new ReadPairPack;
             pack->data = data;
             pack->count = count;
             producePack(pack);
-            data = new ReadPair*[COMMONCONST::MAX_PACKS_IN_READPACKREPO];
-            std::memset(data, 0, sizeof(ReadPair*) * COMMONCONST::MAX_PACKS_IN_READPACKREPO);
-            while(mRepo.writePos - mRepo.readPos > COMMONCONST::MAX_PACKS_IN_MEMORY){
+            data = new ReadPair*[mOptions->bufSize.maxPacksInReadPackRepo];
+            std::memset(data, 0, sizeof(ReadPair*) * mOptions->bufSize.maxPacksInReadPackRepo);
+            while(mRepo.writePos - mRepo.readPos > mOptions->bufSize.maxPacksInMemory){
                 ++slept;
                 usleep(1000);
             }
             readNum += count;
-            if(readNum % (COMMONCONST::MAX_READS_IN_PACK * COMMONCONST::MAX_PACKS_IN_MEMORY) == 0 && mLeftWriter){
-                while( (mLeftWriter && mLeftWriter->bufferLength() > COMMONCONST::MAX_PACKS_IN_MEMORY) ||
-                       (mRightWriter && mRightWriter->bufferLength() > COMMONCONST::MAX_PACKS_IN_MEMORY)){
+            if(readNum % (mOptions->bufSize.maxReadsInPack * mOptions->bufSize.maxPacksInMemory) == 0 && mLeftWriter){
+                while( (mLeftWriter && mLeftWriter->bufferLength() > mOptions->bufSize.maxPacksInMemory) ||
+                       (mRightWriter && mRightWriter->bufferLength() > mOptions->bufSize.maxPacksInMemory)){
                     ++slept;
                     usleep(1000);
                 }
@@ -444,10 +446,6 @@ void PairEndProcessor::producerTask(){
     }
     if(mOptions->verbose){
         util::loginfo("all reads loaded, start to monitor thread status", mOptions->logmtx);
-    }
-
-    if(data != NULL){
-        delete[] data;
     }
 }
 

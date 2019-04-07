@@ -11,6 +11,18 @@
 #include <map>
 #include "util.h"
 
+/** struct to store buffer options */
+struct BufferSizeOptions{
+    int maxPacksInReadPackRepo; ///< max number of ReadPacks a ReadPackRepository can hold
+    int maxReadsInPack;         ///< max number of reads a ReadPack can hold
+    int maxPacksInMemory;       ///< max number of ReadPacks in memory allowed
+    BufferSizeOptions(){
+        maxPacksInReadPackRepo = 1000;
+        maxReadsInPack = 1000;
+        maxPacksInMemory = 500;
+    }
+};
+
 /** struct to store merge options */
 struct MergePEReadsOptions{
     bool enabled;           ///< enable merge overlapped pairend reads into one
@@ -317,6 +329,7 @@ struct Options{
     PolyGTrimmerOptions polyGTrim;                     ///< PolyGTrimmerOptions object
     PolyXTrimmerOptions polyXTrim;                     ///< PolyXTrimmerOptions object
     MergePEReadsOptions mergePE;                       ///< MergePEReadsOptions object
+    BufferSizeOptions bufSize;                         ///< BufferSizeOptions object
     std::mutex logmtx;                                 ///< mutex for logging
     // fuctions of Options
     

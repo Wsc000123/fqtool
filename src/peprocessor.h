@@ -59,7 +59,7 @@ class PairEndProcessor{
         bool processPairEnd(ReadPairPack* pack, ThreadConfig* config);
         
         /** initialize ReadPairPackRepository\n
-         * allocate memory to store at most COMMONCONST::MAX_PACKS_IN_READPACKREPO ReadPairPack pointers
+         * allocate memory to store at most mOptions->bufSize.maxPacksInReadPackRepo ReadPairPack pointers
          * set readPos and writePos of ReadPairPackRepository to be zero
          */
         void initReadPairPackRepository();

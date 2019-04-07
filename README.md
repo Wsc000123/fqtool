@@ -74,6 +74,9 @@ Usage: fqtool [OPTIONS]
 |  --split_by_lines Excludes: --split_by_file_number                            | split output by limiting lines of each file
 |  --file_lines UINT Needs: --split_by_lines                                    | split output file line limit
 |  --split_prefix_digits INT in [1 - 10]=0                                      | the digits for sequential output
+|  --max_packs_in_repo INT in [100 - 10000]=1000                                | maximum packs a pack repository can hold
+|  --max_reads_in_pack INT in [100 - 1000]=1000                                 | maximum reads/pairs a pack can hold
+|  --max_packs_in_memory INT in [100 - 500]=500                                 | maximum packs in memory
 
 Installation  
 

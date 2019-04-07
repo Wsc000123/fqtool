@@ -4,10 +4,6 @@
 #pragma pack()
 
 namespace COMMONCONST{
-    static const int MAX_PACKS_IN_READPACKREPO  = 10000000; ///< max number of ReadPacks a ReadPackRepository can hold
-    static const int MAX_READS_IN_PACK = 1000;              ///< max number of reads a ReadPack can hold
-    static const int MAX_PACKS_IN_MEMORY = 500;             ///< max number of ReadPacks in memory allowed
-
     // different filtering results, bigger number means worse
     // if r1 and r2 are both failed, then the bigger one of the two results will be recorded
     static const int PASS_FILTER = 0;           ///< 000000

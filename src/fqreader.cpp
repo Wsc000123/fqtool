@@ -88,8 +88,6 @@ void FqReader::clearLineBreaks(char* line){
 }
 
 std::string FqReader::getLine(){
-    static int c = 0;
-    ++c;
     int start = mBufUsedLen;
     int end = start;
     
@@ -108,7 +106,7 @@ std::string FqReader::getLine(){
         int len = end - start;
         std::string line(mBuf + start, len);
         ++end;
-        if(end < mBufDataLen - 1 && mBuf[end - 1] == '\r' && mBuf[end] == '\n'){
+        if(end < mBufDataLen - 1 && mBuf[end] == '\n'){
             ++end;
         }
         mBufUsedLen = end;
@@ -137,7 +135,7 @@ std::string FqReader::getLine(){
             int len = end - start;
             str.append(mBuf + start, len);
             ++end;
-            if(end < mBufDataLen - 1 && mBuf[end - 1] == '\r' && mBuf[end] == '\n'){
+            if(end < mBufDataLen - 1 && mBuf[end] == '\n'){
                 ++end;
             }
             mBufUsedLen = end;
@@ -146,7 +144,7 @@ std::string FqReader::getLine(){
 
         // if '\r' or '\n' not found && this is not the last mBuf of file
         // then this line is not contained in this mBuf, we should read new mBuf
-        str.append(mBuf + start, mBufDataLen);
+        str.append(mBuf + start, mBufDataLen - start);
     }
     return std::string();
 }

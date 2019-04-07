@@ -49,8 +49,8 @@ void SingleEndProcessor::initConfig(ThreadConfig* config){
 }
 
 void SingleEndProcessor::initReadPackRepository(){
-    mRepo.packBuffer = new ReadPack*[COMMONCONST::MAX_PACKS_IN_READPACKREPO];
-    std::memset(mRepo.packBuffer, 0, sizeof(ReadPack*) * COMMONCONST::MAX_PACKS_IN_READPACKREPO);
+    mRepo.packBuffer = new ReadPack*[mOptions->bufSize.maxPacksInReadPackRepo];
+    std::memset(mRepo.packBuffer, 0, sizeof(ReadPack*) * mOptions->bufSize.maxPacksInReadPackRepo);
     mRepo.writePos = 0;
     mRepo.readPos = 0;
 }
@@ -61,7 +61,7 @@ void SingleEndProcessor::destroyReadPackRepository(){
 }
 
 void SingleEndProcessor::producePack(ReadPack* pack){
-    while(mRepo.writePos ==  COMMONCONST::MAX_PACKS_IN_READPACKREPO){
+    while(mRepo.writePos ==  mOptions->bufSize.maxPacksInReadPackRepo){
         usleep(60);
     }
     mRepo.packBuffer[mRepo.writePos] = pack;
@@ -75,8 +75,8 @@ void SingleEndProcessor::producerTask(){
     long lastReported = 0; // total number of reads have been loaded into memory
     int slept = 0;  // #sleep happened
     long readNum = 0;  // total number of reads have been loaded into memory and put into mReop
-    Read** data = new Read*[COMMONCONST::MAX_READS_IN_PACK];
-    std::memset(data, 0, sizeof(Read*) * COMMONCONST::MAX_READS_IN_PACK);
+    Read** data = new Read*[mOptions->bufSize.maxReadsInPack];
+    std::memset(data, 0, sizeof(Read*) * mOptions->bufSize.maxReadsInPack);
     FqReader reader(mOptions->in1, true, mOptions->phred64);
     int count = 0; // number of reads have been loaded into memory and put into data but not mReop 
     bool needToBreak = false;
@@ -108,23 +108,23 @@ void SingleEndProcessor::producerTask(){
             util::loginfo(msg, mOptions->logmtx);
         }
         // the pack is full or first N reads needed have got
-        if(count == COMMONCONST::MAX_READS_IN_PACK || needToBreak){
+        if(count == mOptions->bufSize.maxReadsInPack || needToBreak){
             ReadPack* pack = new ReadPack;
             pack->data = data;
             pack->count = count;
             producePack(pack);
             //re-initialize data for next pack
-            data = new Read*[COMMONCONST::MAX_READS_IN_PACK];
-            std::memset(data, 0, sizeof(Read*) * COMMONCONST::MAX_READS_IN_PACK);
+            data = new Read*[mOptions->bufSize.maxReadsInPack];
+            std::memset(data, 0, sizeof(Read*) * mOptions->bufSize.maxReadsInPack);
             // if the consumer is far behind this producer, sleep and wait to limit memory usage
-            while(mRepo.writePos - mRepo.readPos > COMMONCONST::MAX_PACKS_IN_MEMORY){
+            while(mRepo.writePos - mRepo.readPos > mOptions->bufSize.maxPacksInMemory){
                 ++slept;
                 usleep(100);
             }
             readNum += count;
             // if the writer threads are far behind this producer, sleep and wait
-            if(readNum % (COMMONCONST::MAX_READS_IN_PACK * COMMONCONST::MAX_PACKS_IN_MEMORY) == 0 && mLeftWriter){
-                while(mLeftWriter->bufferLength() > COMMONCONST::MAX_PACKS_IN_MEMORY){
+            if(readNum % (mOptions->bufSize.maxReadsInPack * mOptions->bufSize.maxPacksInMemory) == 0 && mLeftWriter){
+                while(mLeftWriter->bufferLength() > mOptions->bufSize.maxPacksInMemory){
                     ++slept;
                     usleep(100);
                 }
@@ -136,9 +136,6 @@ void SingleEndProcessor::producerTask(){
     mProduceFinished = true;
     if(mOptions->verbose){
         util::loginfo("all reads loaded, start to monitor thread status", mOptions->logmtx);
-    }
-    if(data != NULL){
-        delete[] data;
     }
 }
 
@@ -192,10 +189,10 @@ void SingleEndProcessor::consumePack(ThreadConfig* config){
     }
     data = mRepo.packBuffer[mRepo.readPos];
     ++mRepo.readPos;
-    if(mRepo.readPos == COMMONCONST::MAX_PACKS_IN_READPACKREPO){
+    if(mRepo.readPos == mOptions->bufSize.maxPacksInReadPackRepo){
         processSingleEnd(data, config);
-        mRepo.readPos = mRepo.readPos % COMMONCONST::MAX_PACKS_IN_READPACKREPO;
-        mRepo.writePos = mRepo.writePos % COMMONCONST::MAX_PACKS_IN_READPACKREPO;
+        mRepo.readPos = mRepo.readPos % mOptions->bufSize.maxPacksInReadPackRepo;
+        mRepo.writePos = mRepo.writePos % mOptions->bufSize.maxPacksInReadPackRepo;
         mInputMtx.unlock();
     }else{
         mInputMtx.unlock();
