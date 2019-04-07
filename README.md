@@ -83,8 +83,8 @@ Installation
 2. compile  
 `cd pipe`  
 `./autogen.sh`  
-`./configure --prefix=/path/to/install/dir/`
-`make`  
+`./configure --prefix=/path/to/install/dir/`  
+`make`   
 `make install`  
 
 3. execute  
