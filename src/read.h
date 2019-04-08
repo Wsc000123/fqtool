@@ -182,9 +182,10 @@ class Read{
          * @param len length to be trimmed
          */
         inline void trimFront(int len){
-            len = std::min(len, this->length() - 1);
-            seq.seqStr = seq.seqStr.substr(len, this->length() - len);
-            quality = quality.substr(len, this->length() - len);
+            int orilen = length();
+            len = std::min(len, orilen - 1);
+            seq.seqStr = seq.seqStr.substr(len, orilen - len);
+            quality = quality.substr(len, orilen - len);
         }
 };
 

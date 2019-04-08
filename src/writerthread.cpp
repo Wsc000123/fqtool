@@ -39,6 +39,7 @@ void WriterThread::output(){
     while(mOutputCounter < mInputCounter){
         mWriter->write(mRingBuffer[mOutputCounter], 
                             mRingBufferSizes[mOutputCounter]);
+        util::loginfo("write bytes: mRingBufferSizes[mOutputCounter] = " + std::to_string(mRingBufferSizes[mOutputCounter]), mOptions->logmtx);
         delete mRingBuffer[mOutputCounter];
         mRingBuffer[mOutputCounter] = NULL;
         ++mOutputCounter;

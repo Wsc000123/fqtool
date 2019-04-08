@@ -58,18 +58,18 @@ struct PolyXTrimmerOptions{
 
 /** struct to store umi process options */
 struct UMIOptions{
-    bool enabled;     ///< enable umi process if true
-    int location;     ///< umi locations, refer to the MACRO defined
-    int length;       ///< umi length
-    int skip;         ///< number of bases to skip after umi cut from read
-    std::string prefix;     ///< umi prefix in the modified read name
-    std::string separator;  ///< separator to cat two umi seq
+    bool enabled;          ///< enable umi process if true
+    int location;          ///< umi locations, refer to the constexpr defined
+    int length;            ///< umi length
+    int skip;              ///< number of bases to skip after umi cut from read
+    bool dropOtherComment; ///< drop other comment string in header
     /** construct a UMIOptions object and set default values */
     UMIOptions(){
         enabled = false;
         location = 0;
         length = 0;
         skip = 0;
+        dropOtherComment = false;
     }
 };
 

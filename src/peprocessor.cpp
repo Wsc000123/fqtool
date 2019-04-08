@@ -152,7 +152,7 @@ bool PairEndProcessor::process(){
     }
 
     int peakInsertSize = getPeakInsertSize();
-    std::cerr << "Insert size peak (evaluated by pair-end reads: " << peakInsertSize << "\n";
+    std::cerr << "Insert size peak (evaluated by pair-end reads: " << peakInsertSize << ")\n";
     //clean up
     for(int t = 0; t < mOptions->thread; ++t){
         delete threads[t];
@@ -214,15 +214,18 @@ bool PairEndProcessor::processPairEnd(ReadPairPack* pack, ThreadConfig* config){
         config->getPreStats2()->statRead(or2);
 
         if(mDuplicate){
+            util::loginfo("duplicate analysis enabled!", mOptions->logmtx);
             mDuplicate->statPair(or1, or2);
         }
 
         if(mOptions->indexFilter.enabled && mFilter->filterByIndex(or1, or2)){
+            util::loginfo("indexFilter enabled and not passed index filter!", mOptions->logmtx);
             delete pair;
             continue;
         }
 
         if(mOptions->umi.enabled){
+            util::loginfo("umi process enabled!", mOptions->logmtx);
             mUmiProcessor->process(or1, or2);
         }
 
@@ -231,6 +234,7 @@ bool PairEndProcessor::processPairEnd(ReadPairPack* pack, ThreadConfig* config){
 
         if(r1 && r2){
             if(mOptions->polyGTrim.enabled){
+                util::loginfo("polyGTrim enabled", mOptions->logmtx);
                 PolyX::trimPolyG(r1, r2, mOptions->polyGTrim.minLen);
             }
         }
@@ -243,9 +247,11 @@ bool PairEndProcessor::processPairEnd(ReadPairPack* pack, ThreadConfig* config){
                 insertSizeEvaluated = true;
             }
             if(mOptions->correction.enabled){
+                util::loginfo("correction enabled", mOptions->logmtx);
                 BaseCorrector::correctByOverlapAnalysis(r1, r2, config->getFilterResult(), ov);
             }
             if(mOptions->adapter.enableTriming){
+                util::loginfo("trimming enabled", mOptions->logmtx);
                 bool trimmed = AdapterTrimmer::trimByOverlapAnalysis(r1, r2, config->getFilterResult(), ov);
                 if(!trimmed){
                     if(mOptions->adapter.adapterSeqR1Provided){
@@ -256,51 +262,39 @@ bool PairEndProcessor::processPairEnd(ReadPairPack* pack, ThreadConfig* config){
                     }
                 }
             }
-
-            if(config->getThreadId() == 0 && !insertSizeEvaluated && r1 && r2){
-                OverlapResult ov = OverlapAnalysis::analyze(r1, r2, mOptions->overlapDiffLimit, mOptions->overlapRequire);
-                statInsertSize(r1, r2, ov);
-                insertSizeEvaluated = true;
+        }
+            
+        if(r1 && r2){
+            if(mOptions->trim.maxLen1 > 0 && mOptions->trim.maxLen1 < r1->length()){
+                r1->resize(mOptions->trim.maxLen1);
             }
-
-            if(r1 && r2){
-                if(mOptions->polyGTrim.enabled){
-                    PolyX::trimPolyX(r1,  r2, mOptions->polyXTrim.minLen);
-                }
+            if(mOptions->trim.maxLen2 > 0 && mOptions->trim.maxLen2 < r2->length()){
+                r2->resize(mOptions->trim.maxLen2);
             }
+        }
 
-            if(r1 && r2){
-                if(mOptions->trim.maxLen1 > 0 && mOptions->trim.maxLen1 < r1->length()){
-                    r1->resize(mOptions->trim.maxLen1);
-                }
-                if(mOptions->trim.maxLen2 > 0 && mOptions->trim.maxLen2 < r2->length()){
-                    r2->resize(mOptions->trim.maxLen2);
-                }
-            }
+        int result1 = mFilter->passFilter(r1);
+        int result2 = mFilter->passFilter(r2);
+        config->addFilterResult(std::max(result1, result2));
 
-            int result1 = mFilter->passFilter(r1);
-            int result2 = mFilter->passFilter(r2);
-            config->addFilterResult(std::max(result1, result2));
+        if(r1 && result1 == COMMONCONST::PASS_FILTER && r2 && result2 == COMMONCONST::PASS_FILTER){
+            if(mOptions->outputToSTDOUT){
+                interleaved += r1->toString() + r2->toString();
+            }else{
+                outstr1 += r1->toString();
+                outstr2 += r2->toString();
+            }
+            config->getPostStats1()->statRead(r1);
+            config->getPostStats2()->statRead(r2);
+            ++readPassed;
+        }
 
-            if(r1 && result1 == COMMONCONST::PASS_FILTER && r2 && result2 == COMMONCONST::PASS_FILTER){
-                if(mOptions->outputToSTDOUT){
-                    interleaved += r1->toString() + r2->toString();
-                }else{
-                    outstr1 += r1->toString();
-                    outstr2 += r2->toString();
-                }
-                config->getPostStats1()->statRead(r1);
-                config->getPostStats2()->statRead(r2);
-                ++readPassed;
-            }
-
-            delete pair;
-            if(r1 && r1 != or1){
-                delete r1;
-            }
-            if(r2 && r2 != or2){
-                delete r2;
-            }
+        delete pair;
+        if(r1 && r1 != or1){
+            delete r1;
+        }
+        if(r2 && r2 != or2){
+            delete r2;
         }
     }
 
@@ -386,13 +380,6 @@ void PairEndProcessor::consumePack(ThreadConfig* config){
     mInputMtx.lock();
     util::loginfo("thread " + std::to_string(config->getThreadId()) + " locked mInputMtx", mOptions->logmtx);
     while(mRepo.writePos <= mRepo.readPos){
-        if(mRepo.writePos == mRepo.readPos && mRepo.writePos >= mOptions->bufSize.maxPacksInReadPackRepo){
-            util::loginfo("thread " + std::to_string(config->getThreadId()) + " read the last ReadPairPack in mRepo.packBuffer", mOptions->logmtx);
-            mRepo.readPos = mRepo.readPos %  mOptions->bufSize.maxPacksInReadPackRepo;
-            mRepo.writePos = mRepo.writePos % mOptions->bufSize.maxPacksInReadPackRepo;
-            util::loginfo("thread " + std::to_string(config->getThreadId()) + " reset mRepo.readPos = " + std::to_string(mRepo.readPos) 
-                + "and mRepo.writePos = " + std::to_string(mRepo.writePos), mOptions->logmtx);
-        }
         usleep(1000);
         if(mProduceFinished){
             mInputMtx.unlock();

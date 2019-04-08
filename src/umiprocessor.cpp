@@ -13,56 +13,61 @@ void UmiProcessor::process(Read* r1, Read* r2){
     }
     int loc = mOptions->umi.location;
     int len = mOptions->umi.length;
-    std::string umi;
-    if(loc  == UMI_LOC_INDEX1){
-        umi = r1->firstIndex();
-    }else if(loc == UMI_LOC_INDEX2 && r2){
-        umi = r2->firstIndex();
-    }else if(loc == UMI_LOC_READ1){
-        umi = r1->seq.seqStr.substr(0, std::min(r1->length(), len));
-    }else if(loc == UMI_LOC_READ2 && r2){
-        umi = r2->seq.seqStr.substr(0, std::min(r2->length(), len));
-    }else if(loc == UMI_LOC_PER_INDEX){
-        std::string umiMerged = r1->firstIndex();
-        if(r2){
-            umiMerged = umiMerged + "_" + r2->lastIndex();
-        }
-        addUmiToName(r1, umiMerged);
-        if(r2){
-            addUmiToName(r2, umiMerged);
-        }
-    }else if(loc == UMI_LOC_PER_READ){
-        std::string umi1 = r1->seq.seqStr.substr(0, std::min(r1->length(), len));
-        std::string umiMerged = umi1;
-        r1->trimFront(umi.length() + mOptions->umi.skip);
-        if(r2){
-            std::string umi2 = r2->seq.seqStr.substr(0, std::min(r2->length(), len));
-            umiMerged = umiMerged + "_" + umi2;
-            r2->trimFront(umi2.length() + mOptions->umi.skip);
-        }
-        addUmiToName(r1, umiMerged);
-        if(r2){
-            addUmiToName(r2, umiMerged);
-        }
+    std::string umi = " OX:Z:";
+    std::string qua = " BZ:Z:";
+    switch(loc){
+        case UMI_LOC_INDEX1:
+            umi += r1->firstIndex();
+            break;
+        case UMI_LOC_INDEX2:
+            if(r2){
+                umi += r2->firstIndex();
+            }
+            break;
+        case UMI_LOC_READ1:
+            umi += r1->seq.seqStr.substr(0, std::min(r1->length(), len));
+            qua += r1->quality.substr(0, std::min(r1->length(), len));
+            r1->trimFront(len + mOptions->umi.skip);
+            break;
+        case UMI_LOC_READ2:
+            if(r2){
+                umi += r2->seq.seqStr.substr(0, std::min(r2->length(), len));
+                qua += r2->quality.substr(0, std::min(r1->length(), len));
+                r2->trimFront(len + mOptions->umi.skip);
+            }
+            break;
+        case UMI_LOC_PER_INDEX:
+            umi += r1->firstIndex();
+            if(r2){
+                umi.append("-" + r2->firstIndex());
+            }
+            break;
+        case UMI_LOC_PER_READ:
+            umi += r1->seq.seqStr.substr(0, std::min(r1->length(), len));
+            qua += r1->quality.substr(0, std::min(r1->length(), len));
+            r1->trimFront(len + mOptions->umi.skip);
+            if(r2){
+                umi.append("-" + r2->seq.seqStr.substr(0, std::min(r2->length(), len)));
+                r2->trimFront(len + mOptions->umi.skip);
+                qua.append("-" + r2->quality.substr(0, std::min(r1->length(), len)));
+            }
+            break;
+        default:
+            break;
     }
-
-    if(loc != UMI_LOC_PER_READ && loc != UMI_LOC_PER_INDEX){
-        if(r1 && !umi.empty()){
-            addUmiToName(r1, umi);
-        }
-        if(r2 && !umi.empty()){
-            addUmiToName(r2, umi);
-        }
+    std::string tag = umi;
+    if(tag.length() > 6 && qua.length() > 6){
+        tag.append(qua);
+    }
+    if(r1 && tag.length() > 6){
+        addTagToName(r1, tag);
+    }
+    if(r2 && tag.length() > 6){
+        addTagToName(r2, tag);
     }
 }
 
-void UmiProcessor::addUmiToName(Read* r, const std::string& umi){
-    std::string tag;
-    if(mOptions->umi.prefix.empty()){
-        tag = ":" + umi;
-    }else{
-        tag = ":" + mOptions->umi.prefix + "_" + umi;
-    }
+void UmiProcessor::addTagToName(Read* r, const std::string& tag){
     std::string::size_type pos = r->name.find_first_of(" ");
     if(pos == std::string::npos){
         r->name = r->name + tag;

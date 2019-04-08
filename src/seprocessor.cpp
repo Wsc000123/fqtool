@@ -205,7 +205,6 @@ bool SingleEndProcessor::process(){
     if(!mOptions->split.enabled){
         initOutput();
     }
-
     initReadPackRepository();
     std::thread producer(std::bind(&SingleEndProcessor::producerTask, this));
 
@@ -317,15 +316,18 @@ void SingleEndProcessor::processSingleEnd(ReadPack* pack, ThreadConfig *config){
         config->getPreStats1()->statRead(or1);
         // handling the duplication profiling
         if(mDuplicate){
+            util::loginfo("Duplication analysis enabled", mOptions->logmtx);
             mDuplicate->statRead(or1);
         }
         // filter by index
         if(mOptions->indexFilter.enabled && mFilter->filterByIndex(or1)){
+            util::loginfo("indexFilter enabled", mOptions->logmtx);
             delete or1;
             continue;
         }
         // umi processing
         if(mOptions->umi.enabled){
+            util::loginfo("umi process enabled", mOptions->logmtx);
             mUmiProcessor->process(or1);
         }
         // trim in head and tail, and apply quality cut in sliding window
@@ -333,22 +335,26 @@ void SingleEndProcessor::processSingleEnd(ReadPack* pack, ThreadConfig *config){
         // polyG trimming
         if(r1 != NULL){
             if(mOptions->polyGTrim.enabled){
+                util::loginfo("polyGTrim enabled, and read passed trimAndCut", mOptions->logmtx);
                 PolyX::trimPolyG(r1, mOptions->polyGTrim.minLen);
             }
         }
         // adapter trimming
         if(r1 != NULL && mOptions->adapter.enableTriming && mOptions->adapter.adapterSeqR1Provided){
+            util::loginfo("adapter trimming enabled", mOptions->logmtx);
             AdapterTrimmer::trimBySequence(r1, config->getFilterResult(), mOptions->adapter.inputAdapterSeqR1);
         }
         // polyX trimming
         if(r1 != NULL){
             if(mOptions->polyXTrim.enabled){
+                util::loginfo("PolyXTrim enabled", mOptions->logmtx);
                 PolyX::trimPolyX(r1, mOptions->polyXTrim.minLen);
             }
         }
         // trim max length
         if(r1 != NULL){
             if(mOptions->trim.maxLen1 > 0 && mOptions->trim.maxLen1 < r1->length()){
+                util::loginfo("max len trimmed and passed", mOptions->logmtx);
                 r1->resize(mOptions->trim.maxLen1);
             }
         }

@@ -86,15 +86,15 @@ class WriterThread{
         void deleteWriter();
 
     private:
-        Options* mOptions;                 ///< pointer to Options
-        Writer* mWriter;                   ///< Writer object to write cstring in ringbuffer into output
-        std::string mFilename;             ///< output filename of this thread
+        Options* mOptions;                  ///< pointer to Options
+        Writer* mWriter;                    ///< Writer object to write cstring in ringbuffer into output
+        std::string mFilename;              ///< output filename of this thread
         // for spliting control
-        bool mInputCompleted;              ///< if true this thread have finished all writting
-        std::atomic<long> mInputCounter;   ///< atomic type long integer to mark the index of input position in ringbuffer
-        std::atomic<long> mOutputCounter;  ///< atomic type long integer to mark the index of output position in ringbuffer
-        char** mRingBuffer;                ///< array to store pointer to C string to be written
-        size_t* mRingBufferSizes;          ///< array to store the length of each C string to be written
+        bool mInputCompleted;               ///< if true this thread have finished all writting
+        std::atomic<size_t> mInputCounter;  ///< atomic type long integer to mark the index of input position in ringbuffer
+        std::atomic<size_t> mOutputCounter; ///< atomic type long integer to mark the index of output position in ringbuffer
+        char** mRingBuffer;                 ///< array to store pointer to C string to be written
+        size_t* mRingBufferSizes;           ///< array to store the length of each C string to be written
 };
 
 #endif
