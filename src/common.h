@@ -17,6 +17,17 @@ namespace COMMONCONST{
     
     // how many types in total we support
     static const int FILTER_RESULT_TYPES = 32;  ///< 100000
+
+    const static char* FAILED_TYPES[FILTER_RESULT_TYPES] = {
+        "passed", "", "", "",
+        "failed_polyx_filter", "", "", "",
+        "failed_bad_overlap", "", "", "",
+        "failed_too_many_n_bases", "", "", "",
+        "failed_too_short", "failed_too_long", "", "",
+        "failed_quality_filter", "", "", "",
+        "failed_low_complexity", "", "", "",
+        "", "", "", ""
+    };
 }
 
 #endif

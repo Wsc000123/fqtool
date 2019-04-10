@@ -77,10 +77,17 @@ void ThreadConfig::addFilterResult(int result){
     mFilterResult->addFilterResult(result);
 }
 
+void ThreadConfig::addFilterResult(int result, int n){
+    mFilterResult->addFilterResult(result, n);
+}
+
+void ThreadConfig::addMergedPairs(int n){
+    mFilterResult->addMergedPairs(n);
+}
+
 void ThreadConfig::initWriterForSplit(){
     if(mOptions->out1.empty())
         return ;
-
     // use 1-based naming
     std::string num = std::to_string(mWorkingSplit + 1);
     // padding for digits like 0001
@@ -88,7 +95,6 @@ void ThreadConfig::initWriterForSplit(){
         while(num.size() < (size_t)mOptions->split.digits)
             num = "0" + num;
     }
-
     std::string filename1 = util::joinpath(util::dirname(mOptions->out1), num + "." + util::basename(mOptions->out1));
     if(!mOptions->isPaired()){
         initWriter(filename1);

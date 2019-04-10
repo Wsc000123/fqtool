@@ -19,13 +19,19 @@ int main(int argc, char** argv){
     app.add_option("-o,--out1", opt->out1, "read1 output file name")->required(true);
     CLI::Option* pin2 = app.add_option("-I,--in2", opt->in2, "read2 input file name")->needs(pin1)->check(CLI::ExistingFile);
     app.add_option("-O,--out2", opt->out2, "read2 output file name")->needs(pin2);
-    CLI::Option* pmerge = app.add_flag("-m,--merge", opt->mergePE.enabled, "merge overlapped pair of read into one");
-    app.add_flag("-d,--discard_unmerged", opt->mergePE.discardUnmerged, "discard unmerged reads")->needs(pmerge);
+    app.add_option("--unpaired1", opt->unpaired1, "write read1 passed QC but read2 didn't pass");
+    app.add_option("--unpaired2", opt->unpaired2, "write read2 passed QC but read1 didn't pass");
+    app.add_option("--faile_out", opt->failedOut, "write read failed QC");
+    CLI::Option* pmerge = app.add_flag("-m,--merge", opt->mergePE.enabled, "merge overlapped pair of read into one")->needs(pin2);
+    app.add_flag("--discard_unmerged", opt->mergePE.discardUnmerged, "discard unmerged reads")->needs(pmerge);
+    app.add_option("--merge_out", opt->mergePE.out, "merged output")->needs(pmerge);
     app.add_flag("--phred64", opt->phred64, "input fastq quality is in phred64 mode");
     app.add_option("-z,--compress_level", opt->compression, "compression level for gzip output")->check(CLI::Range(1, 9));
     app.add_flag("--interleaved_in", opt->interleavedInput, "input is an interleaved FASTQ")->excludes(pin2);
-    app.add_flag("--non_overwrite", opt->donotOverwrite, "don't overwrite existing output");
-    app.add_flag("-v,--verbose", opt->verbose, "output verbose log information");
+    // duplication
+    CLI::Option* pdupana = app.add_flag("-d,--enable_duplication_analysis", opt->duplicate.enabled, "enable duplication analysis");
+    app.add_option("--dup_key_len", opt->duplicate.keylen, "duplication analysis key length")->check(CLI::Range(12, 31))->needs(pdupana);
+    app.add_option("--dup_hist_size", opt->duplicate.histSize, "duplicate analysis hist size")->check(CLI::Range(1, 10000))->needs(pdupana);
     // adapter
     CLI::Option* pcutadapter = app.add_flag("-a,--enable_dapter_trimming", opt->adapter.enableTriming, "enable adapter trimming");
     app.add_option("--adapter_seqr1", opt->adapter.inputAdapterSeqR1, "adapter for read1")->needs(pcutadapter);
@@ -58,8 +64,8 @@ int main(int argc, char** argv){
     app.add_option("--cut_right_mean_quality", opt->qualitycut.qualityRight, "the mean quality option of cut_right", true)->check(CLI::Range(1, 36))->needs(pcuttail);
     // quality filtering
     CLI::Option* pqfilter = app.add_flag("-q,--enable_quality_filtering", opt->qualFilter.enabled, "enable quality filtering");
-    app.add_option("-Q,--qualified_quality_phred", opt->qualFilter.lowQualityLimit, "the minimum quality value that a base is qualified", true)->needs(pqfilter);
-    app.add_option("-U,--unqualified_base_limit", opt->qualFilter.lowQualityBaseLimit, "maximum low quality bases allowed in one read", true)->needs(pqfilter);
+    app.add_option("-Q,--qualified_quality_phred", opt->qualFilter.lowQualityLimit, "the minimum phred33-based ASCII value that a base is qualified,", true)->needs(pqfilter)->check(CLI::Range(33, 75));
+    app.add_option("-U,--unqualified_base_ratio", opt->qualFilter.lowQualityRatio, "maximum low quality base ratio allowed in one read", true)->check(CLI::Range(0, 1))->needs(pqfilter);
     app.add_option("-N,--n_base_limit", opt->qualFilter.nBaseLimit, "maximum N bases allowed in one read", true)->needs(pqfilter);
     // length filtering
     CLI::Option* plenfilter = app.add_flag("-l,--enable_length_filter", opt->lengthFilter.enabled, "enable length filter");
@@ -93,9 +99,9 @@ int main(int argc, char** argv){
     // threading
     app.add_option("-w,--thread", opt->thread, "worker thread number", true)->check(CLI::Range(1, 16));
     // output split
-    CLI::Option* split_by_fn = app.add_flag("-s,--split_by_file_number", opt->split.byFileNumber, "split output by limiting total split file number");
+    CLI::Option* split_by_fn = app.add_flag("-s,--split_by_file_number", opt->split.byFileNumber, "split output by limiting total split file number")->excludes(pmerge);
     app.add_option("--file_number", opt->split.number, "total split output file number")->needs(split_by_fn);
-    CLI::Option* split_by_ln = app.add_flag("-S,--split_by_lines", opt->split.byFileLines, "split output by limiting lines of each file")->excludes(split_by_fn);
+    CLI::Option* split_by_ln = app.add_flag("-S,--split_by_lines", opt->split.byFileLines, "split output by limiting lines of each file")->excludes(split_by_fn)->excludes(pmerge);
     app.add_option("--file_lines", opt->split.size, "split output file line limit")->needs(split_by_ln);
     app.add_option("--split_prefix_digits", opt->digits, "the digits for sequential output", true)->check(CLI::Range(1, 10));
     // buffer size options

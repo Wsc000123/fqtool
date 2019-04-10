@@ -16,6 +16,10 @@ PairEndProcessor::PairEndProcessor(Options* opt){
     std::memset(mInsertSizeHist, 0, sizeof(long) * insertSizeBufLen);
     mLeftWriter = NULL;
     mRightWriter = NULL;
+    mUnPairedLeftWriter = NULL;
+    mUnPairedRightWriter = NULL;
+    mMergedWriter = NULL;
+    mFailedWriter = NULL;
 
     mDuplicate = NULL;
     if(mOptions->duplicate.enabled){
@@ -33,11 +37,27 @@ PairEndProcessor::~PairEndProcessor(){
 }
 
 void PairEndProcessor::initOutput(){
-    if(mOptions->out1.empty() || mOptions->out2.empty()){
+    if(!mOptions->unpaired1.empty()){
+        mUnPairedLeftWriter = new WriterThread(mOptions, mOptions->unpaired1);
+    }
+    if(!mOptions->unpaired2.empty() && mOptions->unpaired2 != mOptions->unpaired1){
+        mUnPairedRightWriter = new WriterThread(mOptions, mOptions->unpaired2);
+    }
+    if(mOptions->mergePE.enabled){
+        if(!mOptions->mergePE.out.empty()){
+            mMergedWriter = new WriterThread(mOptions, mOptions->mergePE.out);
+        }
+    }
+    if(!mOptions->failedOut.empty()){
+        mFailedWriter = new WriterThread(mOptions, mOptions->failedOut);
+    }
+    if(mOptions->out1.empty()){
         return;
     }
     mLeftWriter = new WriterThread(mOptions, mOptions->out1);
-    mRightWriter = new WriterThread(mOptions, mOptions->out2);
+    if(mOptions->out2.empty()){
+        mRightWriter = new WriterThread(mOptions, mOptions->out2);
+    }
 }
 
 void PairEndProcessor::closeOutput(){
@@ -49,10 +69,26 @@ void PairEndProcessor::closeOutput(){
         delete mRightWriter;
         mRightWriter = NULL;
     }
+    if(mMergedWriter){
+        delete mMergedWriter;
+        mMergedWriter = NULL;
+    }
+    if(mFailedWriter){
+        delete mFailedWriter;
+        mFailedWriter = NULL;
+    }
+    if(mUnPairedLeftWriter){
+        delete mUnPairedLeftWriter;
+        mUnPairedLeftWriter = NULL;
+    }
+    if(mUnPairedRightWriter){
+        delete mUnPairedRightWriter;
+        mUnPairedRightWriter = NULL;
+    }
 }
 
 void PairEndProcessor::initConfig(ThreadConfig* config){
-    if(mOptions->out1.empty()){
+    if(mOptions->out1.empty() || mOptions->out2.empty()){
         return;
     }
     if(mOptions->split.enabled){
@@ -61,16 +97,15 @@ void PairEndProcessor::initConfig(ThreadConfig* config){
 }
 
 bool PairEndProcessor::process(){
+    // construct two Writer for read1/2 if split disabled
     if(!mOptions->split.enabled){
         initOutput();
     }
-    util::loginfo("initReadPairPackRepository started", mOptions->logmtx);
+    // initialization initReadPairPackRepository
     initReadPairPackRepository();
-    util::loginfo("initReadPairPackRepository finished", mOptions->logmtx);
-    util::loginfo("producerTask thread started", mOptions->logmtx);
+    // start single producerTask produce pack in background
     std::thread producer(&PairEndProcessor::producerTask, this);
-    util::loginfo("producerTask thread running in background", mOptions->logmtx);
-    util::loginfo("construct " + std::to_string(mOptions->thread) + " threads to consumeTask started", mOptions->logmtx);
+    // start multiple thread consumerTask in background
     ThreadConfig** configs = new ThreadConfig*[mOptions->thread];
     for(int t = 0; t < mOptions->thread; ++t){
         configs[t] = new ThreadConfig(mOptions, t, true);
@@ -80,36 +115,59 @@ bool PairEndProcessor::process(){
     for(int t = 0; t < mOptions->thread; ++t){
         threads[t] = new std::thread(&PairEndProcessor::consumerTask, this, configs[t]);
     }
-    util::loginfo("construct " + std::to_string(mOptions->thread) + " threads to consumeTask finished", mOptions->logmtx);
+    // start read1/2 writer thread in background if split disabled
     std::thread* leftWriterThread = NULL;
     std::thread* rightWriterThread = NULL;
+    std::thread* unpairedLeftWriterThread = NULL;
+    std::thread* unpairedRightWriterThread = NULL;
+    std::thread* mergedWriterThread = NULL;
+    std::thread* failedWriterThread = NULL;
     if(mLeftWriter){
         leftWriterThread = new std::thread(&PairEndProcessor::writeTask, this, mLeftWriter);
-        util::loginfo("read1 writer thread constructed", mOptions->logmtx);
     }
     if(mRightWriter){
         rightWriterThread = new std::thread(&PairEndProcessor::writeTask, this, mRightWriter);
-        util::loginfo("read2 writer thread constructed", mOptions->logmtx);
     }
+    if(mUnPairedLeftWriter){
+        unpairedLeftWriterThread = new std::thread(&PairEndProcessor::writeTask, this, mUnPairedLeftWriter);
+    }
+    if(mUnPairedRightWriter){
+        unpairedRightWriterThread = new std::thread(&PairEndProcessor::writeTask, this, mUnPairedRightWriter);
+    }
+    if(mFailedWriter){
+       failedWriterThread  = new std::thread(&PairEndProcessor::writeTask, this, mFailedWriter);
+    }
+    if(mMergedWriter){
+        mergedWriterThread = new std::thread(&PairEndProcessor::writeTask, this, mMergedWriter);
+    }
+    // join producerTask thread
     producer.join();
-    util::loginfo("producer thread finished work and joined", mOptions->logmtx);
+    // join consumerTask threads
     for(int t = 0; t < mOptions->thread; ++t){
         threads[t]->join();
     }
-    util::loginfo("process threads finished work and joined", mOptions->logmtx);
-
-    if(leftWriterThread){
-        leftWriterThread->join();
-        util::loginfo("left thread for writing finished work and joined", mOptions->logmtx);
+    // joint leftWriterThread and rightWriterThread etc
+    if(!mOptions->split.enabled){
+        if(leftWriterThread){
+            leftWriterThread->join();
+        }
+        if(rightWriterThread){
+            rightWriterThread->join();
+        }
+        if(unpairedLeftWriterThread){
+            unpairedLeftWriterThread->join();
+        }
+        if(unpairedRightWriterThread){
+            unpairedRightWriterThread->join();
+        }
+        if(mergedWriterThread){
+            mergedWriterThread->join();
+        }
+        if(failedWriterThread){
+            failedWriterThread->join();
+        }
     }
-    if(rightWriterThread){
-        rightWriterThread->join();
-        util::loginfo("right thread for writing finished work and joined", mOptions->logmtx);
-
-    }
-    if(mOptions->verbose){
-        util::loginfo("start to generate reports\n", mOptions->logmtx);
-    }
+    // summarize statistic informations
     std::vector<Stats*> preStats1;
     std::vector<Stats*> preStats2;
     std::vector<Stats*> postStats1;
@@ -127,18 +185,20 @@ bool PairEndProcessor::process(){
     Stats* finalPostStats1 = Stats::merge(postStats1);
     Stats* finalPostStats2 = Stats::merge(postStats2);
     FilterResult* finalFilterResult = FilterResult::merge(filterResults);
-
     std::cerr << "Read1 before filtering: \n";
     std::cerr << finalPreStats1 << "\n";
-    std::cerr << "Read1 after filtering: \n";
-    std::cerr << finalPostStats1 << "\n";
     std::cerr << "Read2 before filtering: \n";
     std::cerr << finalPreStats2 << "\n";
-    std::cerr << "Read2 after filtering: \n";
-    std::cerr << finalPostStats2 << "\n";
-    std::cerr << "Filtering results: \n";
-    std::cerr << finalFilterResult << "\n";
-
+    if(!mOptions->mergePE.enabled){
+        std::cerr << "Read1 after filtering: \n";
+        std::cerr << finalPostStats1 << "\n";
+        std::cerr << "Read2 after filtering: \n";
+        std::cerr << finalPostStats2 << "\n";
+    }else{
+        std::cerr << "Filtering results: \n";
+        std::cerr << finalFilterResult << "\n";
+    }
+    // duplication analysis
     size_t* dupHist = NULL;
     double* dupMeanGC = NULL;
     double dupRate = 0.0;
@@ -153,28 +213,34 @@ bool PairEndProcessor::process(){
 
     int peakInsertSize = getPeakInsertSize();
     std::cerr << "Insert size peak (evaluated by pair-end reads: " << peakInsertSize << ")\n";
-    //clean up
+
+    if(mOptions->mergePE.enabled){
+        std::cerr << "Read pairs merged: " << finalFilterResult->mMergedPairs << "\n";
+        if(finalPostStats1->getReads() > 0){
+            double postMergedPercent = 100.0 * finalFilterResult->mMergedPairs / finalPostStats1->getReads();
+            double preMergedPercent = 100.0 * finalFilterResult->mMergedPairs / finalPreStats1->getReads();
+            std::cerr << "% of original read pairs: " << preMergedPercent << "%\n";
+            std::cerr << "% in reads after filtering: " << postMergedPercent << "%\n";
+        }
+    }
+    // clean up
     for(int t = 0; t < mOptions->thread; ++t){
         delete threads[t];
         threads[t] = NULL;
         delete configs[t];
         configs[t] = NULL;
     }
-
     delete finalPreStats1;
     delete finalPreStats2;
     delete finalPostStats1;
     delete finalPostStats2;
     delete finalFilterResult;
-
     if(mOptions->duplicate.enabled){
         delete[] dupHist;
         delete[] dupMeanGC;
     }
-
     delete[] threads;
     delete[] configs;
-
     if(leftWriterThread){
         delete leftWriterThread;
     }
@@ -184,7 +250,6 @@ bool PairEndProcessor::process(){
     if(!mOptions->split.enabled){
         closeOutput();
     }
-
     return true;
 }
 
@@ -203,8 +268,13 @@ int PairEndProcessor::getPeakInsertSize(){
 bool PairEndProcessor::processPairEnd(ReadPairPack* pack, ThreadConfig* config){
     std::string outstr1;
     std::string outstr2;
-    std::string interleaved;
+    std::string failedOut;
+    std::string unpairedOut1;
+    std::string unpairedOut2;
+    std::string mergedOutput; 
+    std::string singleOutput;
     int readPassed = 0;
+    int mergedCount = 0;
     for(int p = 0; p < pack->count; ++p){
         ReadPair* pair = pack->data[p];
         Read* or1 = pair->left;
@@ -213,19 +283,16 @@ bool PairEndProcessor::processPairEnd(ReadPairPack* pack, ThreadConfig* config){
         config->getPreStats1()->statRead(or1);
         config->getPreStats2()->statRead(or2);
 
-        if(mDuplicate){
-            util::loginfo("duplicate analysis enabled!", mOptions->logmtx);
+        if(mOptions->duplicate.enabled){
             mDuplicate->statPair(or1, or2);
         }
 
         if(mOptions->indexFilter.enabled && mFilter->filterByIndex(or1, or2)){
-            util::loginfo("indexFilter enabled and not passed index filter!", mOptions->logmtx);
             delete pair;
             continue;
         }
 
         if(mOptions->umi.enabled){
-            util::loginfo("umi process enabled!", mOptions->logmtx);
             mUmiProcessor->process(or1, or2);
         }
 
@@ -234,7 +301,6 @@ bool PairEndProcessor::processPairEnd(ReadPairPack* pack, ThreadConfig* config){
 
         if(r1 && r2){
             if(mOptions->polyGTrim.enabled){
-                util::loginfo("polyGTrim enabled", mOptions->logmtx);
                 PolyX::trimPolyG(r1, r2, mOptions->polyGTrim.minLen);
             }
         }
@@ -247,11 +313,9 @@ bool PairEndProcessor::processPairEnd(ReadPairPack* pack, ThreadConfig* config){
                 insertSizeEvaluated = true;
             }
             if(mOptions->correction.enabled){
-                util::loginfo("correction enabled", mOptions->logmtx);
                 BaseCorrector::correctByOverlapAnalysis(r1, r2, config->getFilterResult(), ov);
             }
             if(mOptions->adapter.enableTriming){
-                util::loginfo("trimming enabled", mOptions->logmtx);
                 bool trimmed = AdapterTrimmer::trimByOverlapAnalysis(r1, r2, config->getFilterResult(), ov);
                 if(!trimmed){
                     if(mOptions->adapter.adapterSeqR1Provided){
@@ -263,7 +327,19 @@ bool PairEndProcessor::processPairEnd(ReadPairPack* pack, ThreadConfig* config){
                 }
             }
         }
-            
+
+        if(config->getThreadId() == 0 && !insertSizeEvaluated && r1 != NULL && r2!=NULL){
+              OverlapResult ov = OverlapAnalysis::analyze(r1, r2, mOptions->overlapDiffLimit, mOptions->overlapRequire);
+              statInsertSize(r1, r2, ov);
+              insertSizeEvaluated = true;
+        }
+
+        if(r1 && r2){
+            if(mOptions->polyXTrim.enabled){
+                PolyX::trimPolyX(r1, r2, mOptions->polyXTrim.minLen);
+            }
+        }
+
         if(r1 && r2){
             if(mOptions->trim.maxLen1 > 0 && mOptions->trim.maxLen1 < r1->length()){
                 r1->resize(mOptions->trim.maxLen1);
@@ -273,20 +349,84 @@ bool PairEndProcessor::processPairEnd(ReadPairPack* pack, ThreadConfig* config){
             }
         }
 
-        int result1 = mFilter->passFilter(r1);
-        int result2 = mFilter->passFilter(r2);
-        config->addFilterResult(std::max(result1, result2));
-
-        if(r1 && result1 == COMMONCONST::PASS_FILTER && r2 && result2 == COMMONCONST::PASS_FILTER){
-            if(mOptions->outputToSTDOUT){
-                interleaved += r1->toString() + r2->toString();
-            }else{
-                outstr1 += r1->toString();
-                outstr2 += r2->toString();
+        Read* merged = NULL;
+        bool mergeProcessed = false;
+        if(mOptions->mergePE.enabled && r1 && r2){
+            OverlapResult ov = OverlapAnalysis::analyze(r1, r2, mOptions->overlapDiffLimit, mOptions->overlapRequire);
+            if(ov.overlapped){
+                merged = OverlapAnalysis::merge(r1, r2, ov);
+                int result = mFilter->passFilter(merged);
+                config->addFilterResult(result, 2);
+                if(result == COMMONCONST::PASS_FILTER){
+                    mergedOutput += merged->toString();
+                    config->getPostStats1()->statRead(merged);
+                    ++readPassed;
+                    ++mergedCount;
+                }
+                delete merged;
+                mergeProcessed = true;
+            }else if(!mOptions->mergePE.discardUnmerged){
+                int result1 = mFilter->passFilter(r1);
+                config->addFilterResult(result1, 1);
+                if(result1 == COMMONCONST::PASS_FILTER){
+                    mergedOutput += r1->toString();
+                    config->getPostStats1()->statRead(r1);
+                }
+                int result2 = mFilter->passFilter(r2);
+                config->addFilterResult(result2, 1);
+                if(result2 == COMMONCONST::PASS_FILTER){
+                    mergedOutput += r2->toString();
+                    config->getPostStats2()->statRead(r2);
+                }
+                if(result1 == COMMONCONST::PASS_FILTER && result2 == COMMONCONST::PASS_FILTER){
+                    ++readPassed;
+                }
+                mergeProcessed = true;
             }
-            config->getPostStats1()->statRead(r1);
-            config->getPostStats2()->statRead(r2);
-            ++readPassed;
+        }
+
+        if(!mergeProcessed){
+            int result1 = mFilter->passFilter(r1);
+            int result2 = mFilter->passFilter(r2);
+            config->addFilterResult(std::max(result1, result2));
+
+            if(r1 && result1 == COMMONCONST::PASS_FILTER && r2 && result2 == COMMONCONST::PASS_FILTER){
+                if(mOptions->outputToSTDOUT){
+                    singleOutput += r1->toString() + r2->toString();
+                }else{
+                    outstr1 += r1->toString();
+                    outstr2 += r2->toString();
+                }
+                if(!mOptions->mergePE.enabled){
+                    config->getPostStats1()->statRead(r1);
+                    config->getPostStats2()->statRead(r2);
+                }
+                ++readPassed;
+            }else if(r1 && result1 == COMMONCONST::PASS_FILTER){
+                if(mUnPairedLeftWriter){
+                    unpairedOut1 += r1->toString();
+                    if(mFailedWriter){
+                        failedOut += or2->toStringWithTag(COMMONCONST::FAILED_TYPES[result2]);
+                    }
+                }else{
+                    if(mFailedWriter){
+                        failedOut += or1->toStringWithTag("paired_read_is_failing");
+                        failedOut += or2->toStringWithTag(COMMONCONST::FAILED_TYPES[result2]);
+                    }
+                }
+            }else if(r2 && result2 == COMMONCONST::PASS_FILTER){
+                if(mUnPairedLeftWriter){
+                    unpairedOut2 += r2->toString();
+                    if(mFailedWriter){
+                        failedOut += or1->toStringWithTag(COMMONCONST::FAILED_TYPES[result2]);
+                    }
+                }else{
+                    if(mFailedWriter){
+                        failedOut += or1->toStringWithTag(COMMONCONST::FAILED_TYPES[result1]);
+                        failedOut += or2->toStringWithTag("paired_read_is_failing");
+                    }
+                }
+            }
         }
 
         delete pair;
@@ -302,7 +442,11 @@ bool PairEndProcessor::processPairEnd(ReadPairPack* pack, ThreadConfig* config){
         mOutputMtx.lock();
     }
     if(mOptions->outputToSTDOUT){
-        std::fwrite(interleaved.c_str(), 1, interleaved.size(), stdout);
+        if(mOptions->mergePE.enabled){
+            std::fwrite(mergedOutput.c_str(), 1, mergedOutput.length(), stdout);
+        }else{
+            std::fwrite(singleOutput.c_str(), 1, singleOutput.size(), stdout);
+        }
     }else if(mOptions->split.enabled){
         if(!mOptions->out1.empty()){
             config->getWriter1()->writeString(outstr1);
@@ -310,17 +454,44 @@ bool PairEndProcessor::processPairEnd(ReadPairPack* pack, ThreadConfig* config){
         if(!mOptions->out2.empty()){
             config->getWriter2()->writeString(outstr2);
         }
-        config->markProcessed(pack->count);
-    }else{
-        if(mRightWriter && mLeftWriter){
-            char* ldata = new char[outstr1.size()];
-            std::memcpy(ldata, outstr1.c_str(), outstr1.size());
-            mLeftWriter->input(ldata, outstr1.size());
-            char* rdata = new char[outstr2.size()];
-            std::memcpy(rdata, outstr2.c_str(), outstr2.size());
-            mRightWriter->input(rdata, outstr2.size());
-        }
     }
+    
+    if(mMergedWriter && !mergedOutput.empty()){
+        char* mdata = new char[mergedOutput.size()];
+        std::memcpy(mdata, mergedOutput.c_str(), mergedOutput.size());
+        mMergedWriter->input(mdata, mergedOutput.size());
+    }
+
+    if(mFailedWriter && !failedOut.empty()){
+        char* fdata = new char[failedOut.size()];
+        std::memcpy(fdata, failedOut.c_str(), failedOut.size());
+        mFailedWriter->input(fdata, failedOut.size());
+    }
+
+    if(mRightWriter && mLeftWriter && (!outstr1.empty() || !outstr2.empty())){
+        char* ldata = new char[outstr1.size()];
+        std::memcpy(ldata, outstr1.c_str(), outstr1.size());
+        mLeftWriter->input(ldata, outstr1.size());
+        char* rdata = new char[outstr2.size()];
+        std::memcpy(rdata, outstr2.c_str(), outstr2.size());
+        mRightWriter->input(rdata, outstr2.size());
+    }else if(mLeftWriter && !singleOutput.empty()){
+        char* ldata = new char[singleOutput.size()];
+        std::memcpy(ldata, singleOutput.c_str(), singleOutput.size());
+        mLeftWriter->input(ldata, singleOutput.size());
+    }
+
+    if(!unpairedOut1.empty() && mUnPairedLeftWriter){
+        char* unpairedData1 = new char[unpairedOut1.size()];
+        std::memcpy(unpairedData1, unpairedOut1.c_str(), unpairedOut1.size());
+        mUnPairedLeftWriter->input(unpairedData1, unpairedOut1.size());
+    }
+    if(!unpairedOut2.empty() && mUnPairedRightWriter){
+        char* unpairedData2 = new char[unpairedOut2.size()];
+        std::memcpy(unpairedData2, unpairedOut2.c_str(), unpairedOut2.size());
+        mUnPairedRightWriter->input(unpairedData2, unpairedOut2.size());
+    }
+
     if(!mOptions->split.enabled){
         mOutputMtx.unlock();
     }
@@ -329,7 +500,10 @@ bool PairEndProcessor::processPairEnd(ReadPairPack* pack, ThreadConfig* config){
     }else{
         config->markProcessed(pack->count);
     }
-    delete pack->data;
+    if(mOptions->mergePE.enabled){
+        config->addMergedPairs(mergedCount);
+    }
+    delete[] pack->data;
     delete pack;
     
     return true;
@@ -363,59 +537,39 @@ void PairEndProcessor::destroyReadPairPackRepository(){
 }
 
 void PairEndProcessor::producePack(ReadPairPack* pack){
-    util::loginfo("producePack started wait: mRepo.writePos = " + std::to_string(mRepo.writePos), mOptions->logmtx);
     if(mRepo.writePos >= mOptions->bufSize.maxPacksInReadPackRepo){
-        util::loginfo("RING BUFFER LIMIT REACHED ", mOptions->logmtx);
     }
     while(mRepo.writePos >= mOptions->bufSize.maxPacksInReadPackRepo){
-        util::loginfo("BUFFRESET?: mRepo.writePos = " + std::to_string(mRepo.writePos), mOptions->logmtx);
         usleep(1000);
     }
-    util::loginfo("producePack started prod: mRepo.writePos = " + std::to_string(mRepo.writePos), mOptions->logmtx);
     mRepo.packBuffer[mRepo.writePos] = pack;
     ++mRepo.writePos;
-    util::loginfo("producePack finished prod: mRepo.writePos = " + std::to_string(mRepo.writePos), mOptions->logmtx);
 }
 
 void PairEndProcessor::consumePack(ThreadConfig* config){
     mInputMtx.lock();
-    util::loginfo("thread " + std::to_string(config->getThreadId()) + " locked mInputMtx", mOptions->logmtx);
     while(mRepo.writePos <= mRepo.readPos){
         usleep(1000);
         if(mProduceFinished){
             mInputMtx.unlock();
-            util::loginfo("thread " + std::to_string(config->getThreadId()) + " unlock mInputMtx, mProduceFinished is true" +
-                    " mRepo.writePos = " + std::to_string(mRepo.writePos) + " mRepo.readPos = " + std::to_string(mRepo.readPos), mOptions->logmtx);
             return;
         }
     }
     ReadPairPack* data = mRepo.packBuffer[mRepo.readPos];
-    util::loginfo("thread " + std::to_string(config->getThreadId()) + " get ReadPairPack ad " + std::to_string(mRepo.readPos) + " of mRepo.packBuffer", mOptions->logmtx);
     ++mRepo.readPos;
     if(mRepo.readPos >= mOptions->bufSize.maxPacksInReadPackRepo){
-        util::loginfo("thread " + std::to_string(config->getThreadId()) + " read the last ReadPairPack in mRepo.packBuffer", mOptions->logmtx);
         mRepo.readPos = mRepo.readPos %  mOptions->bufSize.maxPacksInReadPackRepo;
         mRepo.writePos = mRepo.writePos % mOptions->bufSize.maxPacksInReadPackRepo;
-        util::loginfo("thread " + std::to_string(config->getThreadId()) + " reset mRepo.readPos = " + std::to_string(mRepo.readPos) 
-                + "and mRepo.writePos = " + std::to_string(mRepo.writePos), mOptions->logmtx);
-        util::loginfo("thread " + std::to_string(config->getThreadId()) + " reset mreop.readPos and mRepo.writePos and started to process ReadPairPack", mOptions->logmtx); 
         processPairEnd(data, config);
-        util::loginfo("thread " + std::to_string(config->getThreadId()) + " reset mreop.readPos and mRepo.writePos and finished processing ReadPairPack", mOptions->logmtx);
         mInputMtx.unlock();
-        util::loginfo("thread " + std::to_string(config->getThreadId()) + " reset mreop.readPos and mRepo.writePos and finished processing ReadPairPack and unlock mInputMtx", mOptions->logmtx);
     }else{
-        util::loginfo("thread " + std::to_string(config->getThreadId()) + " unlock mInputMtx", mOptions->logmtx);
         mInputMtx.unlock();
-        util::loginfo("thread " + std::to_string(config->getThreadId()) + " started to process ReadPairPack", mOptions->logmtx);
         processPairEnd(data, config);
-        util::loginfo("thread " + std::to_string(config->getThreadId()) + " finished processing ReadPairPack", mOptions->logmtx);
     }
 }
 
 void PairEndProcessor::producerTask(){
-    if(mOptions->verbose){
-        util::loginfo("start to load data", mOptions->logmtx);
-    }
+    util::loginfo("loading  data started", mOptions->logmtx);
     size_t lastReported = 0;
     size_t slept = 0;
     size_t readNum = 0;
@@ -427,7 +581,6 @@ void PairEndProcessor::producerTask(){
     while(true){
         ReadPair* readPair = reader.read();
         if(!readPair || needToBreak){
-            util::loginfo("end of file reached, mReop.writePos = " + std::to_string(mRepo.writePos) + " mReop.readPos = " + std::to_string(mRepo.readPos), mOptions->logmtx);
             ReadPairPack* pack = new ReadPairPack;
             pack->data = data;
             pack->count = count;
@@ -444,7 +597,7 @@ void PairEndProcessor::producerTask(){
         if(mOptions->readsToProcess > 0 && count + readNum >= mOptions->readsToProcess){
             needToBreak = true;
         }
-        if(mOptions->verbose && count + readNum >= lastReported + 1000000){
+        if(count + readNum >= lastReported + 1000000){
             lastReported = count + readNum;
             std::string msg = "loaded " + std::to_string(lastReported/1000000) + "M";
             util::loginfo(msg, mOptions->logmtx);
@@ -472,9 +625,7 @@ void PairEndProcessor::producerTask(){
         }
     }
     mProduceFinished = true;
-    if(mOptions->verbose){
-        util::loginfo("all reads loaded, start to monitor thread status", mOptions->logmtx);
-    }
+    util::loginfo("all data loaded, start to monitor thread status", mOptions->logmtx);
 }
 
 void PairEndProcessor::consumerTask(ThreadConfig* config){
@@ -491,18 +642,14 @@ void PairEndProcessor::consumerTask(ThreadConfig* config){
         }
         if(mProduceFinished && mRepo.writePos == mRepo.readPos){
             ++mFinishedThreads;
-            if(mOptions->verbose){
-                std::string msg = "thread " + std::to_string(config->getThreadId() + 1) + " data processing completed";
-                util::loginfo(msg, mOptions->logmtx);
-            }
+            std::string msg = "thread " + std::to_string(config->getThreadId() + 1) + " data processing completed";
+            util::loginfo(msg, mOptions->logmtx);
             break;
         }
         if(mProduceFinished){
-            if(mOptions->verbose){
-                std::string msg = "thread " + std::to_string(config->getThreadId() + 1) + " is processing the " +
-                                  std::to_string(mRepo.readPos) + " / " + std::to_string(mRepo.writePos) + " pack";
-                util::loginfo(msg, mOptions->logmtx);
-            }
+            std::string msg = "thread " + std::to_string(config->getThreadId() + 1) + " is processing the " +
+                              std::to_string(mRepo.readPos) + " / " + std::to_string(mRepo.writePos) + " pack";
+            util::loginfo(msg, mOptions->logmtx);
         }
         consumePack(config);
     }
@@ -513,26 +660,31 @@ void PairEndProcessor::consumerTask(ThreadConfig* config){
         if(mRightWriter){
             mRightWriter->setInputCompleted();
         }
+        if(mUnPairedLeftWriter){
+            mUnPairedLeftWriter->setInputCompleted();
+        }
+        if(mUnPairedRightWriter){
+            mUnPairedRightWriter->setInputCompleted();
+        }
+        if(mMergedWriter){
+            mMergedWriter->setInputCompleted();
+        }
+        if(mFailedWriter){
+            mFailedWriter->setInputCompleted();
+        }
     }
-
-    if(mOptions->verbose){
-        std::string msg = "thread " + std::to_string(config->getThreadId() + 1) + " finished";
-        util::loginfo(msg, mOptions->logmtx);
-    }
+    std::string msg = "thread " + std::to_string(config->getThreadId() + 1) + " finished";
+    util::loginfo(msg, mOptions->logmtx);
 }
 
 void PairEndProcessor::writeTask(WriterThread* config){
-    util::loginfo("start this WriterThread now", mOptions->logmtx);
     while(true){
         if(config->isCompleted()){
             config->output();
             break;
-            util::loginfo("finish this WriterThread and break out", mOptions->logmtx);
         }
         config->output();
     }
-    if(mOptions->verbose){
-        std::string msg = config->getFilename() + " writer finished";
-        util::loginfo(msg, mOptions->logmtx);
-    }
+    std::string msg = config->getFilename() + " writer finished";
+    util::loginfo(msg, mOptions->logmtx);
 }

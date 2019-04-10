@@ -135,6 +135,10 @@ class PairEndProcessor{
         long* mInsertSizeHist;               ///< array to store different insert size counts
         WriterThread* mLeftWriter;           ///< pointer to a WriterThread object to write read1
         WriterThread* mRightWriter;          ///< pointer to a WriterThread object to write read2
+        WriterThread* mMergedWriter;         ///< pointer to a WriterThread object to write merged output
+        WriterThread* mFailedWriter;         ///< pointer to a WriterThread object to write failed output
+        WriterThread* mUnPairedLeftWriter;   ///< pointer to a WriterThread object to write unpaired read1
+        WriterThread* mUnPairedRightWriter;  ///< pointer to a WriterThread object to write unpaired read2
         Duplicate* mDuplicate;               ///< pointer to a Duplicate object to du duplicate analysis
 };
 

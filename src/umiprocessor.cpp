@@ -72,6 +72,10 @@ void UmiProcessor::addTagToName(Read* r, const std::string& tag){
     if(pos == std::string::npos){
         r->name = r->name + tag;
     }else{
-        r->name = r->name.substr(0, pos) + tag + r->name.substr(pos, r->name.length() - pos);
+        if(mOptions->umi.dropOtherComment){
+            r->name = r->name.substr(0, pos) + tag;
+        }else{
+            r->name =r->name.substr(0, pos) + tag + r->name.substr(pos, r->name.length() - pos);
+        }
     }
 }

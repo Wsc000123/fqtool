@@ -95,6 +95,18 @@ public:
      * @param result filter result returned by Filter
      */
     void addFilterResult(int result);
+    
+    /** add filter result of one read to be written in this thread into the FilterResult in this thread
+     * @param result filter result returned by Filter
+     * @param n reads number
+     */
+    void addFilterResult(int result, int n);
+
+    /** add filter result of merged pair of reads number
+     * @param n number of merged pair of reads
+     */
+    void addMergedPairs(int n);
+
 
     /** get the manual crafted thread marker
      * @return mThreadId

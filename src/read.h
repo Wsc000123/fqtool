@@ -166,6 +166,14 @@ class Read{
         inline std::string toString(){
             return name + "\n" + seq.seqStr + "\n" + strand + "\n" + quality + "\n";
         }
+
+        /** convert a Read object to a string
+         * @param tag additional string to append to a Read
+         * @return a string representation of a Read
+         */
+        inline std::string toStringWithTag(std::string tag){
+            return name + " " + tag + "\n" + seq.seqStr + "\n" + strand + "\n" + quality + "\n";
+        }
         
         /** resize a Read to specified length
          * @param len length

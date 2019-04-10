@@ -70,3 +70,35 @@ OverlapResult OverlapAnalysis::analyze(Seq& s1, Seq& s2, int overlapDiffLimit, i
     ovr.offset = ovr.overlapLen = ovr.diff = 0;
     return ovr;
 }
+
+Read* OverlapAnalysis::merge(Read* r1, Read* r2, OverlapResult& ov){
+    if(!ov.overlapLen){
+        return NULL;
+    }
+    int ol = ov.overlapLen;
+    int len1 = ol + std::max(0, ov.offset);
+    int len2 = 0;
+    if(ov.offset > 0){
+        len2 = r2->length() - ol;
+    }
+    Read* rr2 = r2->reverseComplement();
+    std::string mergedSeq = r1->seq.seqStr.substr(0, len1);
+    if(ov.offset > 0){
+        mergedSeq += rr2->seq.seqStr.substr(ol, len2);
+    }
+    std::string mergedQual = r1->quality.substr(0, len1);
+    if(ov.offset > 0){
+        mergedQual += rr2->quality.substr(ol, len2);
+    }
+    delete rr2;
+    std::string name = "";
+    std::string::size_type pos = r1->name.find_first_of(" ");
+    if(pos == std::string::npos){
+        name += "_merged_" + std::to_string(len1) + "_" + std::to_string(len2);
+    }else{
+        name += r1->name.substr(0, pos -1) + "_merged_" + std::to_string(len1) + "_" + std::to_string(len2) +
+                r1->name.substr(pos);
+    }
+    Read* mergedRead = new Read(name, mergedSeq, r1->strand, mergedQual);
+    return mergedRead;
+}

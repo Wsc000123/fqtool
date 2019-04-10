@@ -47,6 +47,14 @@ class OverlapAnalysis{
          * @param overlapRequire minimum required length of the overlapped region
          */
         static OverlapResult analyze(Read* r1, Read* r2, int overlapDiffLimit = 5, int overlapRequire = 30);
+
+        /** Merge read1/2 based on overlap analysis results
+         * @param r1 pointer to Read object
+         * @param r2 pointer to Read object
+         * @param ov reference of OverlapResult object
+         * @return pointer to merged Read Object
+         */
+        static Read* merge(Read* r1, Read* r2, OverlapResult& ov); 
 };
 
 #endif

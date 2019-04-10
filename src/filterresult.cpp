@@ -11,6 +11,7 @@ FilterResult::FilterResult(Options* opt, bool paired){
     mCorrectionMatrix = new size_t[64];
     std::memset(mCorrectionMatrix, 0, sizeof(size_t) * 64);
     mCorrectedReads = 0;
+    mMergedPairs = 0;
     mSummarized = false;
 }
 
@@ -27,6 +28,17 @@ void FilterResult::addFilterResult(int result){
     }else{
         mFilterReadStats[result] += 1;
     }
+}
+
+void FilterResult::addFilterResult(int result, int n){
+    if(result < COMMONCONST::PASS_FILTER || result >= COMMONCONST::FILTER_RESULT_TYPES){
+        return;
+    }
+    mFilterReadStats[result] += n;
+}
+
+void FilterResult::addMergedPairs(int n){
+    mMergedPairs += n;
 }
 
 FilterResult* FilterResult::merge(std::vector<FilterResult*>& list){
@@ -50,6 +62,7 @@ FilterResult* FilterResult::merge(std::vector<FilterResult*>& list){
         // update mTrimmedAdapterReads/bases
         result->mTrimmedAdapterReads += list[i]->mTrimmedAdapterReads;
         result->mTrimmedAdapterBases += list[i]->mTrimmedAdapterBases;
+        result->mMergedPairs += list[i]->mMergedPairs;
 
         // update read counting
         result->mCorrectedReads += list[i]->mCorrectedReads;

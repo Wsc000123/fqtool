@@ -27,6 +27,7 @@ struct BufferSizeOptions{
 struct MergePEReadsOptions{
     bool enabled;           ///< enable merge overlapped pairend reads into one
     bool discardUnmerged;   ///< discard unmerged reads
+    std::string out;        ///< output file name
     /** construct a MergePEReads object to store merge options */
     MergePEReadsOptions(){
         enabled = false;
@@ -186,13 +187,15 @@ struct QualityFilterOptions{
     char lowQualityLimit;       ///< if a base's quality < lowQualityLimit, hen it's considered as a low quality base
     int lowQualityBaseLimit;    ///< if low quality bases number > lowQualityBaseLimit, then discard this read
     int nBaseLimit;             ///< if N bases number > nBaseLimit, then discard this read
+    double lowQualityRatio;     ///< if a read has bases with quality < lowQualityLimit more than this ratio, it will be dropped
     /** construct a QualityFilterOptions object and set default values */
     QualityFilterOptions(){
         enabled = true;
         // '0' == Q15
-        lowQualityLimit = '0';
+        lowQualityLimit = 48;
         lowQualityBaseLimit = 40;
         nBaseLimit = 5;
+        lowQualityRatio = 0.30;
     }
 };
 
@@ -297,19 +300,20 @@ struct Options{
     std::string in2;              ///< input read2 filename
     std::string out1;             ///< output read1 filename
     std::string out2;             ///< output read2 filename
+    std::string unpaired1;        ///< output unpaired read1 filename
+    std::string unpaired2;        ///< output unpaired read2 filename
+    std::string failedOut;        ///< output failed read1/2 filename
     std::string jsonFile;         ///< output json filename
     std::string htmlFile;         ///< output html report filename
     std::string reportTitle;      ///< html report title
     int digits;                   ///< number of digits for split filename prefix
     int compression;              ///< compression level for gz format output
     bool phred64;                 ///< the input file is using phred64 quality scoring if true 
-    bool donotOverwrite;          ///< do not over write existing files
     bool inputFromSTDIN;          ///< read from STDIN
     bool outputToSTDOUT;          ///< write to STDOUT
     bool interleavedInput;        ///< the input read1(in1) file is an interleaved PE fastq
     size_t readsToProcess;           ///< number of reads to process
     int thread;                   ///< number of threads to do paralel work
-    bool verbose;                 ///< output debug information if true
     int insertSizeMax;            ///< maximum value of insert size
     int overlapRequire;           ///< overlap region minimum length
     int overlapDiffLimit;         ///< overlap region maximum different bases allowed

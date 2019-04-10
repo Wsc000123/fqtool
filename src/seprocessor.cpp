@@ -69,9 +69,7 @@ void SingleEndProcessor::producePack(ReadPack* pack){
 }
 
 void SingleEndProcessor::producerTask(){
-    if(mOptions->verbose){
-        util::loginfo("start to load data", mOptions->logmtx);
-    }
+    util::loginfo("loading data started", mOptions->logmtx);
     size_t lastReported = 0; // total number of reads have been loaded into memory
     int slept = 0;  // #sleep happened
     size_t readNum = 0;  // total number of reads have been loaded into memory and put into mReop
@@ -102,8 +100,7 @@ void SingleEndProcessor::producerTask(){
         if(mOptions->readsToProcess > 0 && count + readNum >= mOptions->readsToProcess){
             needToBreak = true;
         }
-        // if verbose log #M reads loaded into memory
-        if(mOptions->verbose && count + readNum >= lastReported + 1000000){
+        if(count + readNum >= lastReported + 1000000){
             lastReported = count + readNum;
             std::string msg = "loaded " + std::to_string(lastReported/1000000) + "M reads";
             util::loginfo(msg, mOptions->logmtx);
@@ -135,9 +132,7 @@ void SingleEndProcessor::producerTask(){
         }
     }
     mProduceFinished = true;
-    if(mOptions->verbose){
-        util::loginfo("all reads loaded, start to monitor thread status", mOptions->logmtx);
-    }
+    util::loginfo("all reads loaded, start to monitor thread status", mOptions->logmtx);
 }
 
 void SingleEndProcessor::consumerTask(ThreadConfig* config){
@@ -154,17 +149,13 @@ void SingleEndProcessor::consumerTask(ThreadConfig* config){
         }
         if(mProduceFinished && mRepo.writePos == mRepo.readPos){
             ++mFinishedThreads;
-            if(mOptions->verbose){
-                std::string msg = "thread " + std::to_string(config->getThreadId() + 1) + " data processing finished";
-                util::loginfo(msg, mOptions->logmtx);
-            }
+            std::string msg = "thread " + std::to_string(config->getThreadId() + 1) + " data processing finished";
+            util::loginfo(msg, mOptions->logmtx);
             break;
         }
-        if(mProduceFinished && mOptions->verbose){
-            std::string msg = "thread " + std::to_string(config->getThreadId() + 1) + " is processing the " +
-                               std::to_string(mRepo.readPos) + "/" + std::to_string(mRepo.writePos) + " pack";
-            util::loginfo(msg, mOptions->logmtx);
-        }
+        std::string msg = "thread " + std::to_string(config->getThreadId() + 1) + " is processing the " +
+                           std::to_string(mRepo.readPos) + "/" + std::to_string(mRepo.writePos) + " pack";
+        util::loginfo(msg, mOptions->logmtx);
         consumePack(config);
     }
     if(mFinishedThreads == mOptions->thread){
@@ -172,10 +163,8 @@ void SingleEndProcessor::consumerTask(ThreadConfig* config){
             mLeftWriter->setInputCompleted();
         }
     }
-    if(mOptions->verbose){
-        std::string msg = "thread " + std::to_string(config->getThreadId() + 1) + " finished";
-        util::loginfo(msg, mOptions->logmtx);
-    }
+    std::string msg = "thread " + std::to_string(config->getThreadId() + 1) + " finished";
+    util::loginfo(msg, mOptions->logmtx);
 }
 
 void SingleEndProcessor::consumePack(ThreadConfig* config){
@@ -233,10 +222,7 @@ bool SingleEndProcessor::process(){
             leftWriterThread->join();
         }
     }
-
-    if(mOptions->verbose){
-        util::loginfo("start to generate reports\n", mOptions->logmtx);
-    }
+    util::loginfo("start to generate reports\n", mOptions->logmtx);
     // merge stats and read filter results
     std::vector<Stats*> preStats;
     std::vector<Stats*> postStats;
@@ -315,19 +301,16 @@ void SingleEndProcessor::processSingleEnd(ReadPack* pack, ThreadConfig *config){
         // stats the original read before trimming 
         config->getPreStats1()->statRead(or1);
         // handling the duplication profiling
-        if(mDuplicate){
-            util::loginfo("Duplication analysis enabled", mOptions->logmtx);
+        if(mOptions->duplicate.enabled){
             mDuplicate->statRead(or1);
         }
         // filter by index
         if(mOptions->indexFilter.enabled && mFilter->filterByIndex(or1)){
-            util::loginfo("indexFilter enabled", mOptions->logmtx);
             delete or1;
             continue;
         }
         // umi processing
         if(mOptions->umi.enabled){
-            util::loginfo("umi process enabled", mOptions->logmtx);
             mUmiProcessor->process(or1);
         }
         // trim in head and tail, and apply quality cut in sliding window
@@ -335,26 +318,22 @@ void SingleEndProcessor::processSingleEnd(ReadPack* pack, ThreadConfig *config){
         // polyG trimming
         if(r1 != NULL){
             if(mOptions->polyGTrim.enabled){
-                util::loginfo("polyGTrim enabled, and read passed trimAndCut", mOptions->logmtx);
                 PolyX::trimPolyG(r1, mOptions->polyGTrim.minLen);
             }
         }
         // adapter trimming
         if(r1 != NULL && mOptions->adapter.enableTriming && mOptions->adapter.adapterSeqR1Provided){
-            util::loginfo("adapter trimming enabled", mOptions->logmtx);
             AdapterTrimmer::trimBySequence(r1, config->getFilterResult(), mOptions->adapter.inputAdapterSeqR1);
         }
         // polyX trimming
         if(r1 != NULL){
             if(mOptions->polyXTrim.enabled){
-                util::loginfo("PolyXTrim enabled", mOptions->logmtx);
                 PolyX::trimPolyX(r1, mOptions->polyXTrim.minLen);
             }
         }
         // trim max length
         if(r1 != NULL){
             if(mOptions->trim.maxLen1 > 0 && mOptions->trim.maxLen1 < r1->length()){
-                util::loginfo("max len trimmed and passed", mOptions->logmtx);
                 r1->resize(mOptions->trim.maxLen1);
             }
         }
@@ -401,7 +380,7 @@ void SingleEndProcessor::processSingleEnd(ReadPack* pack, ThreadConfig *config){
     }else{
         config->markProcessed(pack->count);
     }
-    delete pack->data;
+    delete[] pack->data;
     delete pack;
 }
 
@@ -413,9 +392,6 @@ void SingleEndProcessor::writeTask(WriterThread* config){
         }
         config->output();
     }
-
-    if(mOptions->verbose){
-        std::string msg = config->getFilename() + " writer finished";
-        util::loginfo(msg, mOptions->logmtx);
-    }
+    std::string msg = config->getFilename() + " writer finished";
+    util::loginfo(msg, mOptions->logmtx);
 }

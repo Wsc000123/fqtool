@@ -31,23 +31,18 @@ bool WriterThread::setInputCompleted(){
 }
 
 void WriterThread::output(){
-    util::loginfo("output started, start wait, mOutputCounter = " + std::to_string(mOutputCounter) + " mInputCounter = " + std::to_string(mInputCounter), mOptions->logmtx);
     if(mOutputCounter >= mInputCounter){
         usleep(100);
     }
-    util::loginfo("output started, passed wait, mOutputCounter = " + std::to_string(mOutputCounter) + " mInputCounter = " + std::to_string(mInputCounter), mOptions->logmtx);
     while(mOutputCounter < mInputCounter){
         mWriter->write(mRingBuffer[mOutputCounter], 
                             mRingBufferSizes[mOutputCounter]);
-        util::loginfo("write bytes: mRingBufferSizes[mOutputCounter] = " + std::to_string(mRingBufferSizes[mOutputCounter]), mOptions->logmtx);
         delete mRingBuffer[mOutputCounter];
         mRingBuffer[mOutputCounter] = NULL;
         ++mOutputCounter;
     }
-    util::loginfo("output finished, mOutputCounter = " + std::to_string(mOutputCounter) + " mInputCounter = " + std::to_string(mInputCounter), mOptions->logmtx);
     mOutputCounter = mOutputCounter % mOptions->bufSize.maxPacksInReadPackRepo;
     mInputCounter = mInputCounter % mOptions->bufSize.maxPacksInReadPackRepo;
-    util::loginfo("Counter Reseted, mOutputCounter = " + std::to_string(mOutputCounter) + " mInputCounter = " + std::to_string(mInputCounter), mOptions->logmtx);
 }
 
 void WriterThread::input(char* cstr, size_t size){

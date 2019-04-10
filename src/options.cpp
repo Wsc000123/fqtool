@@ -11,14 +11,13 @@ Options::Options(){
     thread = 1;
     compression = 2;
     phred64 = false;
-    donotOverwrite = false;
     inputFromSTDIN = false;
     outputToSTDOUT = false;
     readsToProcess = 0;
     interleavedInput = false;
     insertSizeMax = 512;
     overlapDiffLimit = 5;
-    verbose = false;
+    overlapRequire = 30;
     jsonFile = "report.json";
     htmlFile = "report.html";
 }
@@ -28,6 +27,9 @@ void Options::update(){
     adapter.adapterSeqR1Provided = adapter.inputAdapterSeqR1.empty() ? false : true;
     adapter.adapterSeqR2Provided = adapter.inputAdapterSeqR2.empty() ? false : true;
     adapter.cutable = (adapter.enableTriming && (isPaired() || adapter.inputAdapterSeqR1.length() > 0));
+    if(adapter.enableTriming && (!adapter.adapterSeqR1Provided && !adapter.adapterSeqR2Provided) && isPaired()){
+        adapter.enableDetectForPE = true;
+    }
     // update index filtering options
     if(indexFilter.enabled){
         initIndexFilter(indexFilter.index1File, indexFilter.index2File, indexFilter.threshold);
@@ -37,6 +39,12 @@ void Options::update(){
     }
     // update split potions
     split.enabled = split.byFileLines || split.byFileNumber;
+    // update quality filter options
+    qualFilter.lowQualityBaseLimit = qualFilter.lowQualityRatio * est.seqLen1;
+    // validate umi options
+    if(umi.enabled && (umi.location == 3 || umi.location == 4 || umi.location == 6) && umi.length == 0){
+        util::error_exit("umi length can not be zero if it's in read1/2");
+    }
 }
 
 bool Options::isPaired(){

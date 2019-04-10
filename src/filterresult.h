@@ -17,17 +17,18 @@
 /** Class to store/calculate read filter results */
 class FilterResult{
     public:
-        Options *mOptions;                                       ///< pointer to Options object
-        bool mPaired;                                            ///< pairend filter results if true, else single end results
-        size_t mCorrectedReads;                                  ///< number of reads got bases corrected
-        size_t mCorrectedBases;                                  ///< number of bases got corrected
-        size_t mFilterReadStats[COMMONCONST::FILTER_RESULT_TYPES];    ///< reads filter status accumulation array
-        size_t mTrimmedAdapterReads;                             ///< number of reads got adapter trimmed
-        size_t mTrimmedAdapterBases;                             ///< number of bases got trimmed when do adapter trimming
-        std::map<std::string, size_t> mAdapter1Count;            ///< read1 adapter trimmed count map
-        std::map<std::string, size_t> mAdapter2Count;            ///< read2 adapter trimmed count map
-        size_t* mCorrectionMatrix;                               ///< 1x64 array to store various base to base correction accumulation numbers
-        bool mSummarized;                                        ///< whether a FilterResult has been mSummarized(i.e mCorrectedBases calculated)
+        Options *mOptions;                                         ///< pointer to Options object
+        bool mPaired;                                              ///< pairend filter results if true, else single end results
+        size_t mCorrectedReads;                                    ///< number of reads got bases corrected
+        size_t mCorrectedBases;                                    ///< number of bases got corrected
+        size_t mMergedPairs;                                       ///< number of read pairs merged
+        size_t mFilterReadStats[COMMONCONST::FILTER_RESULT_TYPES]; ///< reads filter status accumulation array
+        size_t mTrimmedAdapterReads;                               ///< number of reads got adapter trimmed
+        size_t mTrimmedAdapterBases;                               ///< number of bases got trimmed when do adapter trimming
+        std::map<std::string, size_t> mAdapter1Count;              ///< read1 adapter trimmed count map
+        std::map<std::string, size_t> mAdapter2Count;              ///< read2 adapter trimmed count map
+        size_t* mCorrectionMatrix;                                 ///< 1x64 array to store various base to base correction accumulation numbers
+        bool mSummarized;                                          ///< whether a FilterResult has been mSummarized(i.e mCorrectedBases calculated)
     public:
         /** Construct FilterResult object to store/calculate filter results
          * @param opt Options object including various filter options
@@ -49,6 +50,17 @@ class FilterResult{
          * @param result filter status
          */
         void addFilterResult(int result);
+
+        /** add filter status result to filter status result accumulation array
+         * @param result filter status
+         * @param n reads number
+         */
+        void addFilterResult(int result, int n);
+
+        /** add number of merged read pair number to filter results
+         * @param n number of pairs merged
+         */
+        void addMergedPairs(int n);
 
         /** merge list of FilterResult object into one(combine filter results of various parts of a fastq file)
          * @param list a vector of pointer to FilterResult object
