@@ -343,6 +343,9 @@ struct Options{
     
     /** update options */
     void update();
+
+    /** valid options */
+    void validate();
     
     /** test input is paired or not
      * @return true if input is paired

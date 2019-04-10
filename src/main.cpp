@@ -112,6 +112,8 @@ int main(int argc, char** argv){
     CLI_PARSE(app, argc, argv);
     // update options
     opt->update();
+    // validate options
+    opt->validate();
     // evaluate read length
     Evaluator eva(opt);
     eva.evaluateReadLen();

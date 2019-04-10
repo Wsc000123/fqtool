@@ -47,6 +47,14 @@ void Options::update(){
     }
 }
 
+void Options::validate(){
+    if(mergePE.enabled){
+        if(mergePE.out.empty()){
+            util::error_exit("merged file output must be provided!");
+        }
+    }
+}
+
 bool Options::isPaired(){
     return in2.length() > 0 || interleavedInput;
 }
