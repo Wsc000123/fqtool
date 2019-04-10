@@ -104,6 +104,8 @@ int main(int argc, char** argv){
     app.add_option("--max_packs_in_memory", opt->bufSize.maxPacksInMemory, "maximum packs in memory", true)->check(CLI::Range(100, 500));
     // parse args
     CLI_PARSE(app, argc, argv);
+    // update options
+    opt->update();
     // evaluate read length
     Evaluator eva(opt);
     eva.evaluateReadLen();
@@ -111,6 +113,7 @@ int main(int argc, char** argv){
     eva.evaluateReadNum();
     if(opt->split.byFileNumber){
         opt->split.size = std::max(opt->est.readsNum / opt->split.number, 1);
+        util::loginfo("total reds: " + std::to_string(opt->est.readsNum) + " split size: " + std::to_string(opt->split.size), opt->logmtx);
     }
     if(opt->overRepAna.enabled){
         eva.evaluateOverRepSeqs();

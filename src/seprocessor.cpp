@@ -385,6 +385,7 @@ void SingleEndProcessor::processSingleEnd(ReadPack* pack, ThreadConfig *config){
         if(!mOptions->out1.empty()){
             config->getWriter1()->writeString(outstr);
         }
+        config->markProcessed(pack->count);
     }else{
         if(mLeftWriter){
             char* ldata = new char[outstr.size()];

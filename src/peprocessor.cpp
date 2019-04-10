@@ -310,6 +310,7 @@ bool PairEndProcessor::processPairEnd(ReadPairPack* pack, ThreadConfig* config){
         if(!mOptions->out2.empty()){
             config->getWriter2()->writeString(outstr2);
         }
+        config->markProcessed(pack->count);
     }else{
         if(mRightWriter && mLeftWriter){
             char* ldata = new char[outstr1.size()];

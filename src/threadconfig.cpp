@@ -19,65 +19,65 @@ ThreadConfig::ThreadConfig(Options* opt, int threadId, bool paired){
     mCanBeStopped = false;
 }
 
-ThreadConfig::~ThreadConfig() {
+ThreadConfig::~ThreadConfig(){
     cleanup();
 }
 
-void ThreadConfig::cleanup() {
+void ThreadConfig::cleanup(){
     if(mOptions->split.enabled && mOptions->split.byFileNumber)
         writeEmptyFilesForSplitting();
     deleteWriter();
 }
 
-void ThreadConfig::deleteWriter() {
-    if(mWriter1 != NULL) {
+void ThreadConfig::deleteWriter(){
+    if(mWriter1 != NULL){
         delete mWriter1;
         mWriter1 = NULL;
     }
-    if(mWriter2 != NULL) {
+    if(mWriter2 != NULL){
         delete mWriter2;
         mWriter2 = NULL;
     }
 }
 
-void ThreadConfig::initWriter(std::string filename1) {
+void ThreadConfig::initWriter(std::string filename1){
     deleteWriter();
     mWriter1 = new Writer(filename1, mOptions->compression);
 }
 
-void ThreadConfig::initWriter(std::string filename1, std::string filename2) {
+void ThreadConfig::initWriter(std::string filename1, std::string filename2){
     deleteWriter();
     mWriter1 = new Writer(filename1, mOptions->compression);
     mWriter2 = new Writer(filename2, mOptions->compression);
 }
 
-void ThreadConfig::initWriter(std::ofstream* stream) {
+void ThreadConfig::initWriter(std::ofstream* stream){
     deleteWriter();
     mWriter1 = new Writer(stream);
 }
 
-void ThreadConfig::initWriter(std::ofstream* stream1, std::ofstream* stream2) {
+void ThreadConfig::initWriter(std::ofstream* stream1, std::ofstream* stream2){
     deleteWriter();
     mWriter1 = new Writer(stream1);
     mWriter2 = new Writer(stream2);
 }
 
-void ThreadConfig::initWriter(gzFile gzfile) {
+void ThreadConfig::initWriter(gzFile gzfile){
     deleteWriter();
     mWriter1 = new Writer(gzfile);
 }
 
-void ThreadConfig::initWriter(gzFile gzfile1, gzFile gzfile2) {
+void ThreadConfig::initWriter(gzFile gzfile1, gzFile gzfile2){
     deleteWriter();
     mWriter1 = new Writer(gzfile1);
     mWriter2 = new Writer(gzfile2);
 }
 
-void ThreadConfig::addFilterResult(int result) {
+void ThreadConfig::addFilterResult(int result){
     mFilterResult->addFilterResult(result);
 }
 
-void ThreadConfig::initWriterForSplit() {
+void ThreadConfig::initWriterForSplit(){
     if(mOptions->out1.empty())
         return ;
 
@@ -90,20 +90,20 @@ void ThreadConfig::initWriterForSplit() {
     }
 
     std::string filename1 = util::joinpath(util::dirname(mOptions->out1), num + "." + util::basename(mOptions->out1));
-    if(!mOptions->isPaired()) {
+    if(!mOptions->isPaired()){
         initWriter(filename1);
-    } else {
+    }else{
         std::string filename2 = util::joinpath(util::dirname(mOptions->out2), num + "." + util::basename(mOptions->out2));
         initWriter(filename1, filename2);
     }
 }
 
-void ThreadConfig::markProcessed(long readNum) {
+void ThreadConfig::markProcessed(long readNum){
     mCurrentSplitReads += readNum;
     if(!mOptions->split.enabled)
         return ;
     // if splitting is enabled, check whether current file is full
-    if(mCurrentSplitReads >= mOptions->split.size) {
+    if(mCurrentSplitReads >= mOptions->split.size){
         // if splitting by file lines, just increase output files and write in new files afterwards
         // if splitting by file number, check whether new ouput file will exceed split.number
         if(mOptions->split.byFileLines || mWorkingSplit + mOptions->thread < mOptions->split.number ){
@@ -122,14 +122,14 @@ void ThreadConfig::markProcessed(long readNum) {
 
 // if a task of writting N files is assigned to this thread, but the input file doesn't have so many reads to input
 // write some empty files so it will not break following pipelines
-void ThreadConfig::writeEmptyFilesForSplitting() {
-    while(mWorkingSplit + mOptions->thread < mOptions->split.number) {
+void ThreadConfig::writeEmptyFilesForSplitting(){
+    while(mWorkingSplit + mOptions->thread < mOptions->split.number){
         mWorkingSplit += mOptions->thread;
             initWriterForSplit();
             mCurrentSplitReads = 0;
     }
 }
 
-bool ThreadConfig::canBeStopped() {
+bool ThreadConfig::canBeStopped(){
     return mCanBeStopped;
 }

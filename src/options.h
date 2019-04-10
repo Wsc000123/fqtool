@@ -198,6 +198,7 @@ struct QualityFilterOptions{
 
 /** struct to store adapter detect/trimming options */
 struct AdapterOptions{
+    bool cutable;                     ///< the adpter of reads can be cut if true
     bool enableTriming;               ///< enable index trimming if true
     bool enableDetectForPE;           ///< enable auto detection of index for pair end reads if true
     bool adapterSeqR1Provided;        ///< adapter sequence for read1 is provided externally if true
@@ -208,6 +209,7 @@ struct AdapterOptions{
     std::string detectedAdapterSeqR2; ///< adapter sequence for read2 auto detected
     /** construct a AdapterOptions object and set default values */
     AdapterOptions(){
+        cutable = false;
         enableTriming = true;
         adapterSeqR1Provided = false;
         adapterSeqR2Provided = false;
@@ -331,7 +333,6 @@ struct Options{
     MergePEReadsOptions mergePE;                       ///< MergePEReadsOptions object
     BufferSizeOptions bufSize;                         ///< BufferSizeOptions object
     std::mutex logmtx;                                 ///< mutex for logging
-    // fuctions of Options
     
     /** Construct a Options object */
     Options();
@@ -343,26 +344,6 @@ struct Options{
      * @return true if input is paired
      */
     bool isPaired();
-    
-    /** validate options
-     * @return true if all options is valid
-     */
-    bool validate();
-    
-    /** test whether adapter cut is enabled
-     * @return true if adapter cut is enabled
-     */
-    bool adapterCutEnabled();
-    
-    /** get adapter1 sequence
-     * @return read1 adapter sequence
-     */
-    std::string getAdapter1();
-    
-    /** get adapter2 sequence
-     * @return read2 adapter sequence
-     */
-    std::string getAdapter2();
     
     /** initialize index filter
      * @param blacklistFile1 index1 blacklist file
@@ -376,12 +357,6 @@ struct Options{
      * @return a vector of string from lines of a file
      */ 
     std::vector<std::string> makeListFromFileByLine(const std::string& filename);
-    
-    /** test shall auto adaptor detection be done
-     * @param isR2 
-     * @return true if auto adaptor detection should be done
-     */
-    bool shallDetectAdapter(bool isR2 = false);
 };
 
 #endif

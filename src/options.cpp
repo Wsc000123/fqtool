@@ -24,43 +24,23 @@ Options::Options(){
 }
 
 void Options::update(){
+    // update adapter cutting options
     adapter.adapterSeqR1Provided = adapter.inputAdapterSeqR1.empty() ? false : true;
     adapter.adapterSeqR2Provided = adapter.inputAdapterSeqR2.empty() ? false : true;
+    adapter.cutable = (adapter.enableTriming && (isPaired() || adapter.inputAdapterSeqR1.length() > 0));
+    // update index filtering options
     if(indexFilter.enabled){
         initIndexFilter(indexFilter.index1File, indexFilter.index2File, indexFilter.threshold);
     }
+    if(indexFilter.enabled){
+        initIndexFilter(indexFilter.index1File, indexFilter.index2File, indexFilter.threshold);
+    }
+    // update split potions
+    split.enabled = split.byFileLines || split.byFileNumber;
 }
 
 bool Options::isPaired(){
     return in2.length() > 0 || interleavedInput;
-}
-
-bool Options::adapterCutEnabled(){
-    if(adapter.enableTriming){
-        if(isPaired() || !adapter.inputAdapterSeqR1.empty()){
-            return true;
-        }
-    }
-    return false;
-}
-
-bool Options::validate(){
-    return true;
-}
-
-bool Options::shallDetectAdapter(bool isR2){
-    if(!adapter.enableTriming){
-        return false;
-    }
-    if(isR2){
-        return isPaired() && adapter.enableDetectForPE && adapter.inputAdapterSeqR2 == "auto";
-    }else{
-        if(isPaired()){
-            return adapter.enableDetectForPE && adapter.inputAdapterSeqR1 == "auto";
-        }else{
-            return adapter.inputAdapterSeqR1 == "auto";
-        }
-    }
 }
 
 void Options::initIndexFilter(const std::string& blacklistFile1, const std::string& blacklistFile2, int threshold){
@@ -94,20 +74,4 @@ std::vector<std::string> Options::makeListFromFileByLine(const std::string& file
         ret.push_back(line);
     }
     return ret;
-}
-
-std::string Options::getAdapter1(){
-    if(adapter.inputAdapterSeqR1 == "" || adapter.inputAdapterSeqR1 == "auto"){
-        return "unspecified";
-    }else{
-        return adapter.inputAdapterSeqR1;
-    }
-}
-
-std::string Options::getAdapter2(){
-    if(adapter.inputAdapterSeqR2 == "" || adapter.inputAdapterSeqR2 == "auto"){
-        return "unspecified";
-    }else{
-        return adapter.inputAdapterSeqR2;
-    }
 }
