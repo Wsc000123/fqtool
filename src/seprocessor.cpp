@@ -9,6 +9,7 @@ SingleEndProcessor::SingleEndProcessor(Options* opt){
     mZipFile = NULL;
     mUmiProcessor = new UmiProcessor(mOptions);
     mLeftWriter = NULL;
+    mFailedWriter = NULL;
     mDuplicate = NULL;
     if(mOptions->duplicate.enabled){
         mDuplicate = new Duplicate(mOptions);
@@ -25,6 +26,9 @@ SingleEndProcessor::~SingleEndProcessor(){
 }
 
 void SingleEndProcessor::initOutput(){
+    if(!mOptions->failedOut.empty()){
+        mFailedWriter = new WriterThread(mOptions, mOptions->failedOut);
+    }
     if(mOptions->out1.empty()){
         return;
     }
@@ -35,6 +39,10 @@ void SingleEndProcessor::closeOutput(){
     if(mLeftWriter){
         delete mLeftWriter;
         mLeftWriter = NULL;
+    }
+    if(mFailedWriter){
+        delete mFailedWriter;
+        mFailedWriter = NULL;
     }
 }
 
@@ -162,6 +170,9 @@ void SingleEndProcessor::consumerTask(ThreadConfig* config){
         if(mLeftWriter){
             mLeftWriter->setInputCompleted();
         }
+        if(mFailedWriter){
+            mFailedWriter->setInputCompleted();
+        }
     }
     std::string msg = "thread " + std::to_string(config->getThreadId() + 1) + " finished";
     util::loginfo(msg, mOptions->logmtx);
@@ -211,6 +222,10 @@ bool SingleEndProcessor::process(){
     std::thread* leftWriterThread = NULL;
     if(mLeftWriter){
         leftWriterThread = new std::thread(std::bind(&SingleEndProcessor::writeTask, this, mLeftWriter));
+    }
+    std::thread* failedWriterThread = NULL;
+    if(mFailedWriter){
+        failedWriterThread = new std::thread(std::bind(&SingleEndProcessor::writeTask, this, mFailedWriter));
     }
     producer.join();
     for(int t = 0; t < mOptions->thread; ++t){
@@ -283,17 +298,22 @@ bool SingleEndProcessor::process(){
     delete[] threads;
     delete[] configs;
 
-    if(leftWriterThread)
+    if(leftWriterThread){
         delete leftWriterThread;
-        if(!mOptions->split.enabled){
-            closeOutput();
-        }
+    }
+    if(failedWriterThread){
+        delete failedWriterThread;
+    }
+    if(!mOptions->split.enabled){
+        closeOutput();
+    }
 
     return true;
 }
 
 void SingleEndProcessor::processSingleEnd(ReadPack* pack, ThreadConfig *config){
     std::string outstr;
+    std::string failedOut;
     int readPassed = 0;
     for(int p = 0; p < pack->count; ++p){
         // original read1
@@ -346,6 +366,8 @@ void SingleEndProcessor::processSingleEnd(ReadPack* pack, ThreadConfig *config){
             outstr += r1->toString();
             config->getPostStats1()->statRead(r1);
             ++readPassed;
+        }else if(mFailedWriter){
+            failedOut += or1->toStringWithTag(COMMONCONST::FAILED_TYPES[result]);
         }
         // cleanup memory
         delete or1;
@@ -364,13 +386,17 @@ void SingleEndProcessor::processSingleEnd(ReadPack* pack, ThreadConfig *config){
         if(!mOptions->out1.empty()){
             config->getWriter1()->writeString(outstr);
         }
-        config->markProcessed(pack->count);
     }else{
         if(mLeftWriter){
             char* ldata = new char[outstr.size()];
             std::memcpy(ldata, outstr.c_str(), outstr.size());
             mLeftWriter->input(ldata, outstr.size());
         }
+    }
+    if(mFailedWriter && !failedOut.empty()){
+        char* fdata = new char[failedOut.size()];
+        std::memcpy(fdata, failedOut.c_str(), failedOut.size());
+        mFailedWriter->input(fdata, failedOut.size());
     }
     if(!mOptions->split.enabled){
         mOutputMtx.unlock();

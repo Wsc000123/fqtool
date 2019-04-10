@@ -123,6 +123,7 @@ class SingleEndProcessor{
         std::ofstream* mOutStream;           ///< filestream pointer used as output 
         UmiProcessor* mUmiProcessor;         ///< pointer to UmiProcessor to do umi processing
         WriterThread* mLeftWriter;           ///< pointer to WriterThread to perform writing if split output is disabled
+        WriterThread* mFailedWriter;         ///< pointer to WriterThread to perform writing filter failed read
         Duplicate* mDuplicate;               ///< pointer to Duplicate to do duplicate analysis
 };
 
