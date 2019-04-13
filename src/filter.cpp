@@ -8,11 +8,13 @@ int Filter::passFilter(Read* r){
     int rlen = r->length();
     int lowQualNum = 0;
     int nBaseNum = 0;
+    int totalQual = 0;
     const char* seq = r->seq.seqStr.c_str();
     const char* qual = r->quality.c_str();
 
     if(mOptions->qualFilter.enabled || mOptions->lengthFilter.enabled){
         for(int i = 0; i < rlen; ++i){
+            totalQual += qual[i] - 33;
             if(seq[i] == 'N'){
                 ++nBaseNum;
             }
@@ -21,8 +23,12 @@ int Filter::passFilter(Read* r){
             }
         }
     }
-    if(mOptions->qualFilter.enabled && lowQualNum > mOptions->qualFilter.lowQualityBaseLimit){
-        return COMMONCONST::FAIL_QUALITY;
+    if(mOptions->qualFilter.enabled){
+        if(lowQualNum > mOptions->qualFilter.lowQualityBaseLimit){
+            return COMMONCONST::FAIL_QUALITY;
+        }else if(mOptions->qualFilter.averageQualityLimit > 0 && mOptions->qualFilter.averageQualityLimit > double(totalQual) / rlen){
+            return COMMONCONST::FAIL_QUALITY;
+        }
     }
 
     if(mOptions->qualFilter.enabled && nBaseNum > mOptions->qualFilter.nBaseLimit){

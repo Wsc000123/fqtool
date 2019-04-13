@@ -67,6 +67,7 @@ int main(int argc, char** argv){
     app.add_option("-Q,--qualified_quality_phred", opt->qualFilter.lowQualityLimit, "the minimum phred33-based ASCII value that a base is qualified,", true)->needs(pqfilter)->check(CLI::Range(33, 75));
     app.add_option("-U,--unqualified_base_ratio", opt->qualFilter.lowQualityRatio, "maximum low quality base ratio allowed in one read", true)->check(CLI::Range(0, 1))->needs(pqfilter);
     app.add_option("-N,--n_base_limit", opt->qualFilter.nBaseLimit, "maximum N bases allowed in one read", true)->needs(pqfilter);
+    app.add_option("-e,--average_qual", opt->qualFilter.averageQualityLimit, "average quality needed for one read")->needs(pqfilter);
     // length filtering
     CLI::Option* plenfilter = app.add_flag("-l,--enable_length_filter", opt->lengthFilter.enabled, "enable length filter");
     app.add_option("-L,--minimum_length", opt->lengthFilter.minReadLength, "minimum length required for a read", true)->check(CLI::Range(0, 1000))->needs(plenfilter);

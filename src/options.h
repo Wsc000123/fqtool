@@ -188,6 +188,7 @@ struct QualityFilterOptions{
     int lowQualityBaseLimit;    ///< if low quality bases number > lowQualityBaseLimit, then discard this read
     int nBaseLimit;             ///< if N bases number > nBaseLimit, then discard this read
     double lowQualityRatio;     ///< if a read has bases with quality < lowQualityLimit more than this ratio, it will be dropped
+    double averageQualityLimit; ///< if a read has averaeg quality less then averageQualityLimit, it will be dropped
     /** construct a QualityFilterOptions object and set default values */
     QualityFilterOptions(){
         enabled = true;
@@ -196,6 +197,7 @@ struct QualityFilterOptions{
         lowQualityBaseLimit = 40;
         nBaseLimit = 5;
         lowQualityRatio = 0.30;
+        averageQualityLimit = 0.0;
     }
 };
 
