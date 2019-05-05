@@ -5,11 +5,12 @@
 #include <cstdlib>
 #include <string>
 #include <memory>
+#include <mutex>
 #include <cmath>
-#include "overlapanalysis.h"
 #include "options.h"
 #include "read.h"
 #include "common.h"
+#include "overlapanalysis.h"
 
 /** Class to do reads duplication analysis */
 class Duplicate{
@@ -59,12 +60,13 @@ class Duplicate{
         uint64_t seq2int(const char* cstr, int start, int keylen, bool& valid);
     
     private: 
-        Options* mOptions;      ///< Options Object to provide duplicate analysis options   
-        int mKeyLenInBase;      ///< the length of the key in bases
+        Options* mOptions;     ///< Options Object to provide duplicate analysis options
+        int mKeyLenInBase;     ///< the length of the key in bases
         uint64_t mKeyLenInBit; ///< the bits number needed to represent all kinds of keys
         uint64_t* mDups;       ///< mDups[key] = (the kmer32 with the highest GC encountered)
         uint32_t* mCounts;     ///< mCounts[key] = (the same kmer32 number eccountered)
         uint8_t* mGC;          ///< mGC[key] = (the GC ratio * 255.0 of the kmer32)
+        std::mutex mAddLock;   ///< lock used to add record
 };
         
 #endif

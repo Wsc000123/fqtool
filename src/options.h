@@ -212,6 +212,7 @@ struct AdapterOptions{
     std::string inputAdapterSeqR2;    ///< adapter sequence for read2 provided externally
     std::string detectedAdapterSeqR1; ///< adapter sequence for read1 auto detected 
     std::string detectedAdapterSeqR2; ///< adapter sequence for read2 auto detected
+    double reportThreshold;           ///< adapter sequence trim count rate more than this value will be reported
     /** construct a AdapterOptions object and set default values */
     AdapterOptions(){
         cutable = false;
@@ -219,6 +220,7 @@ struct AdapterOptions{
         adapterSeqR1Provided = false;
         adapterSeqR2Provided = false;
         enableDetectForPE = true;
+        reportThreshold = 0.01;
     }
 };
 

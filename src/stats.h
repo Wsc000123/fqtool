@@ -212,7 +212,16 @@ class Stats{
          * @param size the length of the T value array
          */ 
         template<typename T>
-        static std::string list2string(T* list, int size);
+        static std::string list2string(T* list, int size){
+                std::stringstream ss;
+      for(int i = 0; i < size; ++i){
+          ss << list[i];
+          if(i < size - 1){
+              ss << ",";
+          }
+      }
+      return ss.str();
+  }
        
         /** convert an array of T values to a string seperated by ","
          * @param list pointer to a T value array
@@ -221,7 +230,31 @@ class Stats{
          * ith value output equals average of(list[coords[i-1]] ... list[coords[i]])
          */ 
         template<typename T>
-        static std::string list2string(T* list, int size, size_t* coords);
+        static std::string list2string(T* list, int size, size_t* coords){
+                std::stringstream ss;
+    long start = 0;
+    long end = 0;
+    T total = 0;
+    for(int i = 0; i < size; ++i){
+        if(i > 0){
+            start = coords[i - 1];
+        }
+        end = coords[i];
+        total = 0;
+        for(int j = start; j < end; ++j){
+            total += list[j];
+        }
+        if(end == start){
+            ss << "0";
+        }else{
+            ss << total /(end - start);
+        }
+        if(i < size - 1){
+            ss << ",";
+        }
+    }
+    return ss.str();
+}
 
     private:
         /** extend the array buffer for statistics longer

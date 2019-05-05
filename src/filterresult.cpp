@@ -5,18 +5,21 @@ FilterResult::FilterResult(Options* opt, bool paired){
     mPaired = paired;
     mTrimmedAdapterBases = 0;
     mTrimmedAdapterReads = 0;
+    mTrimmedPolyXBases = (size_t*)std::calloc(4, sizeof(size_t));
+    mTrimmedPolyXReads = (size_t*)std::calloc(4, sizeof(size_t));
     for(int i = 0; i < COMMONCONST::FILTER_RESULT_TYPES; ++i){
         mFilterReadStats[i] = 0;
     }
-    mCorrectionMatrix = new size_t[64];
-    std::memset(mCorrectionMatrix, 0, sizeof(size_t) * 64);
+    mCorrectionMatrix = (size_t*)std::calloc(64, sizeof(size_t));
     mCorrectedReads = 0;
     mMergedPairs = 0;
     mSummarized = false;
 }
 
 FilterResult::~FilterResult(){
-    delete mCorrectionMatrix;
+    free(mCorrectionMatrix);
+    free(mTrimmedPolyXBases);
+    free(mTrimmedPolyXReads);
 }
 
 void FilterResult::addFilterResult(int result){
@@ -35,6 +38,11 @@ void FilterResult::addFilterResult(int result, int n){
         return;
     }
     mFilterReadStats[result] += n;
+}
+
+void FilterResult::addPolyXTrimmed(int base, int length){
+      mTrimmedPolyXReads[base] += 1;
+      mTrimmedPolyXBases[base] += length;
 }
 
 void FilterResult::addMergedPairs(int n){
@@ -59,10 +67,16 @@ FilterResult* FilterResult::merge(std::vector<FilterResult*>& list){
         for(int p = 0; p < 64; ++p){
             correction[p] += curCorr[p];
         }
-        // update mTrimmedAdapterReads/bases
+        // update mTrimmedAdapterReads/Bases
         result->mTrimmedAdapterReads += list[i]->mTrimmedAdapterReads;
         result->mTrimmedAdapterBases += list[i]->mTrimmedAdapterBases;
         result->mMergedPairs += list[i]->mMergedPairs;
+
+        // update mTrimmedPolyXBases/Reads
+        for(int b = 0; b < 4; ++b){
+            result->mTrimmedPolyXBases[b] += list[i]->mTrimmedPolyXBases[b];
+            result->mTrimmedPolyXReads[b] += list[i]->mTrimmedPolyXReads[b];
+        }
 
         // update read counting
         result->mCorrectedReads += list[i]->mCorrectedReads;
@@ -70,17 +84,17 @@ FilterResult* FilterResult::merge(std::vector<FilterResult*>& list){
         // merge adapter stats
         for(auto& e: list[i]->mAdapter1Count){
             if(result->mAdapter1Count.count(e.first) > 0){
-                ++result->mAdapter1Count[e.first];
+                result->mAdapter1Count[e.first] += e.second;
             }else{
-                result->mAdapter1Count[e.first] = 0;
+                result->mAdapter1Count[e.first] = e.second;
             }
         }
 
         for(auto& e: list[i]->mAdapter2Count){
             if(result->mAdapter2Count.count(e.first) > 0){
-                ++result->mAdapter2Count[e.first];
+                result->mAdapter2Count[e.first] += e.second;
             }else{
-                result->mAdapter2Count[e.first] = 0;
+                result->mAdapter2Count[e.first] = e.second;
             }
         }
     }
@@ -226,6 +240,7 @@ void FilterResult::reportHtmlBasic(std::ofstream& ofs, size_t totalReads, size_t
             htmlutil::outputTableRow(ofs, "too_long_reads", htmlutil::formatNumber(mFilterReadStats[COMMONCONST::FAIL_TOO_LONG]) + " (" + std::to_string(mFilterReadStats[COMMONCONST::FAIL_TOO_LONG] * 100.0 /totalReads) + "%)");
         }
     }
+    ofs << "</table>\n";
 }
 
 void FilterResult::reportAdaptersJsonDetails(std::ofstream& ofs, std::map<std::string, size_t>& adapterCounts){
@@ -236,12 +251,11 @@ void FilterResult::reportAdaptersJsonDetails(std::ofstream& ofs, std::map<std::s
     if(totalAdapters == 0){
         return;
     }
-    const double reportThreshold = 0.01;
     const double dTotalAdapters = (double)totalAdapters;
     bool firstItem = true;
     size_t reported = 0;
     for(auto& e: adapterCounts){
-        if(e.second / dTotalAdapters < reportThreshold){
+        if(e.second / dTotalAdapters < mOptions->adapter.reportThreshold){
             continue;
         }
         if(!firstItem){
@@ -282,11 +296,10 @@ void FilterResult::reportAdaptersHtmlDetails(std::ofstream& ofs, std::map<std::s
 
     ofs << "<table class='summary_table'>\n";
     ofs << "<tr><td class='adapter_col' style='font-size:14px;color:#ffffff;background:#556699'>" << "Sequence" << "</td><td class='col2' style='font-size:14px;color:#ffffff;background:#556699'>" << "Occurrences" << "</td    ></tr>\n";    
-    const double reportThreshold = 0.01;
     const double dTotalAdapters = (double)totalAdapters;
     size_t reported = 0;
     for(auto& e: adapterCounts){
-        if(e.second / dTotalAdapters < reportThreshold){
+        if(e.second / dTotalAdapters < mOptions->adapter.reportThreshold){
             continue;
         }
         htmlutil::outputTableRow(ofs, e.first, e.second);
@@ -303,13 +316,15 @@ void FilterResult::reportAdaptersHtmlDetails(std::ofstream& ofs, std::map<std::s
     ofs << "</table>\n";
 }
 
-void FilterResult::reportAdaptersJsonSummary(std::ofstream& ofs, const std::string& padding, const std::string& adapterSeq1, const std::string& adapterSeq2){
+void FilterResult::reportAdaptersJsonSummary(std::ofstream& ofs, const std::string& padding){
     ofs << "{\n";
     jsonutil::writeRecord(ofs, padding, "adapter_trimmed_reads", mTrimmedAdapterReads);
     jsonutil::writeRecord(ofs, padding, "adapter_trimmed_bases", mTrimmedAdapterBases);
-    jsonutil::writeRecord(ofs, padding, "read1_adapter_sequence", adapterSeq1);
+    jsonutil::writeRecord(ofs, padding, "read1_adapter_sequence",
+                          mOptions->adapter.adapterSeqR1Provided ? mOptions->adapter.inputAdapterSeqR1 : mOptions->adapter.detectedAdapterSeqR1);
     if(mPaired){
-        jsonutil::writeRecord(ofs, padding, "read2_adapter_sequence", adapterSeq2);
+        jsonutil::writeRecord(ofs, padding, "read2_adapter_sequence",
+                          mOptions->adapter.adapterSeqR2Provided ? mOptions->adapter.inputAdapterSeqR2 : mOptions->adapter.detectedAdapterSeqR2);
     }
     ofs << padding << "\t" << "\"read1_adapter_counts\": " << "{";
     reportAdaptersJsonDetails(ofs, mAdapter1Count);
@@ -334,4 +349,30 @@ void FilterResult::reportAdaptersHtmlSummary(std::ofstream& ofs, size_t totalBas
         reportAdaptersHtmlDetails(ofs, mAdapter2Count, totalBases);
         ofs << "</div>\n";
     }
+}
+
+void FilterResult::reportPolyXTrimJson(std::ofstream& ofs, const std::string& padding){
+    ofs << padding << "{" << std::endl;
+    const char atcg[4] = {'A', 'T', 'C', 'G'};
+    ofs << padding << "\t\"total_polyx_trimmed_reads\": " << std::accumulate(mTrimmedPolyXReads, mTrimmedPolyXReads + 4, 0) << "," << std::endl;
+    ofs << padding << "\t\"" << "polyx_trimmed_reads" << "\": {";
+    for(int b = 0; b < 4; ++b){
+        if(b > 0){
+            ofs << ", ";
+        }
+        ofs << "\"" << atcg[b] << "\": " << mTrimmedPolyXReads[b];
+    }
+    ofs << "}";
+    ofs << "," << std::endl;
+
+    ofs << padding << "\t\"total_polyx_trimmed_bases\": " << std::accumulate(mTrimmedPolyXBases, mTrimmedPolyXBases + 4, 0) << "," << std::endl;
+    ofs << padding << "\t\"" << "polyx_trimmed_bases" << "\": {";
+    for(int b = 0; b < 4; ++b){
+        if(b > 0){
+            ofs << ", ";
+        }
+        ofs << "\"" << atcg[b] << "\": " << mTrimmedPolyXBases[b];
+    }
+    ofs << "}\n";
+    ofs << "\t}," << std::endl;
 }

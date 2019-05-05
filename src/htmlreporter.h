@@ -50,7 +50,12 @@ class HtmlReporter{
          * @param postStats2 pointer to Stats object
          */
         void printSummary(std::ofstream& ofs, FilterResult* fresult, Stats* preStats1, Stats* postStats1, Stats* preStats2 = NULL, Stats* postStats2 = NULL);
-        
+       
+        /** generate duplicate analysis section
+         * @param ofs reference of std::ofstream
+         */
+        void reportDuplication(std::ofstream& ofs);
+
         /** generate html report
          * @param fresult pointer to FilterResult object
          * @param preStats1 pointer to Stats object

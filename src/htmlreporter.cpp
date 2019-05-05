@@ -140,13 +140,90 @@ void HtmlReporter::printSummary(std::ofstream& ofs, FilterResult* fresult, Stats
     ofs << "</div>" << std::endl;
 
     if(fresult){
+        ofs << "<div class='section_div'>\n";
         ofs << "<div class='subsection_title' onclick=showOrHide('filtering_result')>Filtering result</div>\n";
         ofs << "<div id='filtering_result'>\n";
         fresult->reportHtmlBasic(ofs, preTotalReads, preTotalBases);
         ofs << "</div>\n";
     }
-    ofs << "</table>\n";
+
     ofs << "</div>\n";
+    ofs << "</div>\n";
+
+    if(fresult && mOptions->adapter.enableTriming){
+         ofs << "<div class='section_div'>\n";
+         ofs << "<div class='section_title' onclick=showOrHide('adapters')><a name='summary'>Adapters</a></div>\n";
+         ofs << "<div id='adapters'>\n";
+         fresult->reportAdaptersHtmlSummary(ofs, preTotalBases);
+         ofs << "</div>\n";
+         ofs << "</div>\n";
+    }
+
+    if(mOptions->duplicate.enabled){
+        ofs << "<div class='section_div'>\n";
+        ofs << "<div class='section_title' onclick=showOrHide('duplication')><a name='summary'>Duplication</a></div>\n";
+        ofs << "<div id='duplication'>\n";
+        reportDuplication(ofs);
+        ofs << "</div>\n";
+        ofs << "</div>\n";
+    }
+}
+
+void HtmlReporter::reportDuplication(std::ofstream& ofs){
+    ofs << "<div id='duplication_figure'>\n";
+    ofs << "<div class='figure' id='plot_duplication' style='height:400px;'></div>\n";
+    ofs << "</div>\n";
+
+    ofs << "\n<script type=\"text/javascript\">" << std::endl;
+    std::string json_str = "var data=[";
+
+    int total = mOptions->duplicate.histSize - 2;
+    long *x = new long[total];
+    double allCount = 0;
+    for(int i=0; i<total; i++) {
+        x[i] = i+1;
+        allCount += mDupHist[i+1];
+    }
+    double* percents = new double[total];
+    memset(percents, 0, sizeof(double)*total);
+    if(allCount > 0) {
+        for(int i=0; i<total; i++) {
+            percents[i] = (double)mDupHist[i+1] * 100.0 / (double)allCount;
+        }
+    }
+    int maxGC = total;
+    double* gc = new double[total];
+    for(int i=0; i<total; i++) {
+        gc[i] = (double)mDupMeanGC[i+1] * 100.0;
+        // GC ratio will be not accurate if no enough reads to average
+        if(percents[i] <= 0.05 && maxGC == total)
+            maxGC = i;
+    }
+    
+    json_str += "{";
+    json_str += "x:[" + Stats::list2string(x, total) + "],";
+    json_str += "y:[" + Stats::list2string(percents, total) + "],";
+    json_str += "name: 'Read percent (%)  ',";
+    json_str += "type:'bar',";
+    json_str += "line:{color:'rgba(128,0,128,1.0)', width:1}\n";
+    json_str += "},";
+
+    json_str += "{";
+    json_str += "x:[" + Stats::list2string(x, maxGC) + "],";
+    json_str += "y:[" + Stats::list2string(gc, maxGC) + "],";
+    json_str += "name: 'Mean GC ratio (%)  ',";
+    json_str += "mode:'lines',";
+    json_str += "line:{color:'rgba(255,0,128,1.0)', width:2}\n";
+    json_str += "}";
+    json_str += "];\n";
+    
+    json_str += "var layout={title:'duplication rate (" + std::to_string(mDupRate*100.0) + "%)', xaxis:{title:'duplication level'}, yaxis:{title:'Read percent (%) & GC ratio'}};\n";
+    json_str += "Plotly.newPlot('plot_duplication', data, layout);\n";
+    ofs << json_str;
+    ofs << "</script>" << std::endl;
+    delete[] x;
+    delete[] percents;
+    delete[] gc;
 }
 
  void HtmlReporter::printCSS(std::ofstream& ofs){

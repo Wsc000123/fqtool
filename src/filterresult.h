@@ -25,6 +25,8 @@ class FilterResult{
         size_t mFilterReadStats[COMMONCONST::FILTER_RESULT_TYPES]; ///< reads filter status accumulation array
         size_t mTrimmedAdapterReads;                               ///< number of reads got adapter trimmed
         size_t mTrimmedAdapterBases;                               ///< number of bases got trimmed when do adapter trimming
+        size_t* mTrimmedPolyXReads;                                ///< number of reads got trimmed when do polyx trimming
+        size_t* mTrimmedPolyXBases;                                ///< number of bases got trimmed when do polyx trimming
         std::map<std::string, size_t> mAdapter1Count;              ///< read1 adapter trimmed count map
         std::map<std::string, size_t> mAdapter2Count;              ///< read2 adapter trimmed count map
         size_t* mCorrectionMatrix;                                 ///< 1x64 array to store various base to base correction accumulation numbers
@@ -116,7 +118,7 @@ class FilterResult{
          * @param adapterSeq1 read1 adapter sequence
          * @param adapterSeq2 read2 adapter seqeunce
          */
-        void reportAdaptersJsonSummary(std::ofstream& ofs, const std::string& padding, const std::string& adapterSeq1, const std::string& adapterSeq2="");
+        void reportAdaptersJsonSummary(std::ofstream& ofs, const std::string& padding);
         
         /** Report detailed trimmed adapter sequence and counts in html format
          * @param ofs output file stream
@@ -161,6 +163,18 @@ class FilterResult{
          * @param count number of corrected reads to increase
          */ 
         void incCorrectedReads(int count);
+
+        /** add polyx trimmed statistics into results
+         * @param base which base trimmed 0->A, 1->T, 2->C, 3->G
+         * @param length number of base trimmmed
+         */
+        void addPolyXTrimmed(int base, int length);
+
+        /** report polyx trimming statistics in json
+         * @param ofs reference of ofstream
+         * @param padding json padding str
+         */
+        void reportPolyXTrimJson(std::ofstream& ofs, const std::string& padding);
 };
 
 #endif

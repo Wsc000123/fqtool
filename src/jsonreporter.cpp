@@ -88,12 +88,12 @@ void JsonReporter::report(FilterResult* fresult, Stats* preStats1, Stats* postSt
     }
     jsonutil::writeRecord(ofs, "\t\t", "gc_content", postGCRate);
     ofs << "\t\t" << "}" << std::endl;
-    ofs << "\t" << "}," << std::endl;
 
     if(fresult){
-        ofs << "\t" << "\"filtering_result\": ";
-        fresult->reportJsonBasic(ofs, "\t");
+        ofs << "\t\t" << "\"filtering_result\": ";
+        fresult->reportJsonBasic(ofs, "\t\t");
     }
+    ofs << "\t" << "}," << std::endl;
 
     if(mOptions->duplicate.enabled){
         ofs << "\t" << "\"duplication\": {" << std::endl;
@@ -136,7 +136,13 @@ void JsonReporter::report(FilterResult* fresult, Stats* preStats1, Stats* postSt
 
     if(mOptions->adapter.enableTriming){
         ofs << "\t" << "\"adapter_trim\": ";
-        fresult->reportJsonBasic(ofs, "\t");
-        ofs << std::endl;
+        fresult->reportAdaptersJsonSummary(ofs, "\t");
     }
+
+    if(fresult && (mOptions->polyXTrim.enabled || mOptions->polyGTrim.enabled)){
+        ofs << "\t" << "\"polyx_trimming\": ";
+        fresult->reportPolyXTrimJson(ofs, "\t");
+    }
+
+    ofs << "}" << std::endl;
 }

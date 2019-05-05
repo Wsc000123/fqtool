@@ -44,6 +44,7 @@ uint64_t Duplicate::seq2int(const char* cstr, int start, int keylen, bool& valid
 }
 
 void Duplicate::addRecord(uint32_t key, uint64_t kmer32, uint8_t gc){
+    mAddLock.lock();
     if(mCounts[key] == 0){
         mCounts[key] = 1;
         mDups[key] = kmer32;
@@ -57,6 +58,7 @@ void Duplicate::addRecord(uint32_t key, uint64_t kmer32, uint8_t gc){
             mGC[key] = gc;
         }
     }
+    mAddLock.unlock();
 }
 
 void Duplicate::statRead(Read* r){
@@ -123,7 +125,6 @@ void Duplicate::statPair(Read* r1, Read* r2){
     }
 
     gc = std::round(255.0 * (double) gc / (double)(r1->length() + r2->length()));
-
     addRecord(key, kmer32, gc);
 }
 
@@ -139,9 +140,9 @@ double Duplicate::statAll(size_t* hist, double* meanGC, size_t histSize){
             totalNum += count;
             dupNum += count - 1;
             if(count > histSize){
-                ++hist[histSize -1];
-                meanGC[histSize -1] += gc;
-                ++gcStatNum[histSize -1];
+                ++hist[histSize - 1];
+                meanGC[histSize - 1] += gc;
+                ++gcStatNum[histSize - 1];
             }else{
                 ++hist[count];
                 meanGC[count] += gc;

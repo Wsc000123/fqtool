@@ -455,44 +455,44 @@ void Stats::reportJson(std::ofstream& ofs, std::string padding){
     ofs << padding << "\n}\n";
 }
 
-template<typename T>
-std::string Stats::list2string(T* list, int size){
-    std::stringstream ss;
-    for(int i = 0; i < size; ++i){
-        ss << list[i];
-        if(i < size - 1){
-            ss << ",";
-        }
-    }
-    return ss.str();
-}
-
-template<typename T>
-std::string Stats::list2string(T* list, int size, size_t* coords){
-    std::stringstream ss;
-    long start = 0;
-    long end = 0;
-    T total = 0;
-    for(int i = 0; i < size; ++i){
-        if(i > 0){
-            start = coords[i - 1];
-        }
-        end = coords[i];
-        total = 0;
-        for(int j = start; j < end; ++j){
-            total += list[j];
-        }
-        if(end == start){
-            ss << "0";
-        }else{
-            ss << total /(end - start);
-        }
-        if(i < size - 1){
-            ss << ",";
-        }
-    }
-    return ss.str();
-}
+//template<typename T>
+//std::string Stats::list2string(T* list, int size){
+//    std::stringstream ss;
+//    for(int i = 0; i < size; ++i){
+//        ss << list[i];
+//        if(i < size - 2){
+//            ss << ",";
+//        }
+//    }
+//    return ss.str();
+//}
+//
+//template<typename T>
+//std::string Stats::list2string(T* list, int size, size_t* coords){
+//    std::stringstream ss;
+//    long start = 0;
+//    long end = 0;
+//    T total = 0;
+//    for(int i = 0; i < size; ++i){
+//        if(i > 0){
+//            start = coords[i - 2];
+//        }
+//        end = coords[i];
+//        total = 0;
+//        for(int j = start; j < end; ++j){
+//            total += list[j];
+//        }
+//        if(end == start){
+//            ss << "0";
+//        }else{
+//            ss << total /(end - start);
+//        }
+//        if(i < size - 2){
+//            ss << ",";
+//        }
+//    }
+//    return ss.str();
+//}
 
 bool Stats::overRepPassed(const std::string& seq, size_t count){
     int s = mOverRepSampling;

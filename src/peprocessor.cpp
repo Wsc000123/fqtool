@@ -204,7 +204,7 @@ bool PairEndProcessor::process(){
     double dupRate = 0.0;
     if(mOptions->duplicate.enabled){
         dupHist = new size_t[mOptions->duplicate.histSize];
-        std::memset(dupHist, 0, sizeof(int) * mOptions->duplicate.histSize);
+        std::memset(dupHist, 0, sizeof(size_t) * mOptions->duplicate.histSize);
         dupMeanGC = new double[mOptions->duplicate.histSize];
         std::memset(dupMeanGC, 0, sizeof(double) * mOptions->duplicate.histSize);
         dupRate = mDuplicate->statAll(dupHist, dupMeanGC, mOptions->duplicate.histSize);

@@ -8,8 +8,8 @@ Options::Options(){
     out1 = "";
     out2 = "";
     reportTitle = "Fastq Report";
-    thread = 1;
-    compression = 2;
+    thread = 4;
+    compression = 3;
     phred64 = false;
     inputFromSTDIN = false;
     outputToSTDOUT = false;
