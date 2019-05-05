@@ -27,13 +27,17 @@ void UmiProcessor::process(Read* r1, Read* r2){
         case UMI_LOC_READ1:
             umi += r1->seq.seqStr.substr(0, std::min(r1->length(), len));
             qua += r1->quality.substr(0, std::min(r1->length(), len));
-            r1->trimFront(len + mOptions->umi.skip);
+            if(!mOptions->umi.notTrimRead){
+                r1->trimFront(len + mOptions->umi.skip);
+            }
             break;
         case UMI_LOC_READ2:
             if(r2){
                 umi += r2->seq.seqStr.substr(0, std::min(r2->length(), len));
                 qua += r2->quality.substr(0, std::min(r1->length(), len));
-                r2->trimFront(len + mOptions->umi.skip);
+                if(!mOptions->umi.notTrimRead){
+                    r2->trimFront(len + mOptions->umi.skip);
+                }
             }
             break;
         case UMI_LOC_PER_INDEX:
@@ -45,10 +49,14 @@ void UmiProcessor::process(Read* r1, Read* r2){
         case UMI_LOC_PER_READ:
             umi += r1->seq.seqStr.substr(0, std::min(r1->length(), len));
             qua += r1->quality.substr(0, std::min(r1->length(), len));
-            r1->trimFront(len + mOptions->umi.skip);
+            if(!mOptions->umi.notTrimRead){
+                r1->trimFront(len + mOptions->umi.skip);
+            }
             if(r2){
                 umi.append("-" + r2->seq.seqStr.substr(0, std::min(r2->length(), len)));
-                r2->trimFront(len + mOptions->umi.skip);
+                if(!mOptions->umi.notTrimRead){
+                    r2->trimFront(len + mOptions->umi.skip);
+                }
                 qua.append("-" + r2->quality.substr(0, std::min(r1->length(), len)));
             }
             break;

@@ -90,6 +90,7 @@ int main(int argc, char** argv){
     app.add_option("--umi_len", opt->umi.length, "if the UMI is in read1/read2, its length should be provided", true)->check(CLI::Range(0, 1000))->needs(pumi);
     app.add_option("--umi_skip", opt->umi.skip, "if the UMI is in read1/read2, fastp can skip several bases following UMI", true)->check(CLI::Range(0, 1000))->needs(pumi);
     app.add_flag("--umi_drop_other_comment", opt->umi.dropOtherComment, "drop other comment information")->needs(pumi);
+    app.add_flag("--not_trim_reads", opt->umi.notTrimRead, "not trim reads if umi comes from read prefix")->needs(pumi);
     // overrepresentation sequence analysis
     CLI::Option* pora = app.add_flag("--enable_ORA", opt->overRepAna.enabled, "enable overrepresented sequence analysis.");
     app.add_option("--overrepana_sampling", opt->overRepAna.sampling, "one in --overrepana_sampling will be computed for overrepresentation analysis", true)->check(CLI::Range(1, 10000))->needs(pora);

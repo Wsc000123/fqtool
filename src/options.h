@@ -64,6 +64,7 @@ struct UMIOptions{
     int length;            ///< umi length
     int skip;              ///< number of bases to skip after umi cut from read
     bool dropOtherComment; ///< drop other comment string in header
+    bool notTrimRead;      ///< not trim reads if umi is from read prefix
     /** construct a UMIOptions object and set default values */
     UMIOptions(){
         enabled = false;
@@ -71,6 +72,7 @@ struct UMIOptions{
         length = 0;
         skip = 0;
         dropOtherComment = false;
+        notTrimRead = false;
     }
 };
 
