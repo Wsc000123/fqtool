@@ -22,7 +22,7 @@ void HtmlReporter::setInsertHist(long* insertHist, int insertSizePeak){
 
 void HtmlReporter::report(FilterResult* result, Stats* preStats1, Stats* postStats1, Stats* preStats2, Stats* postStats2) {
     std::ofstream ofs(mOptions->htmlFile);
-    htmlutil::printHeader(ofs, "Fastq Preprocess Report");
+    printHeader(ofs, "Fastq Preprocess Report");
     printSummary(ofs, result, preStats1, postStats1, preStats2, postStats2);
     ofs << "<div class='section_div'>\n";
     ofs << "<div class='section_title' onclick=showOrHide('before_filtering')><a name='summary'>Before filtering</a></div>\n";
@@ -106,7 +106,7 @@ void HtmlReporter::printSummary(std::ofstream& ofs, FilterResult* fresult, Stats
 
     ofs << "<div class='subsection_title' onclick=showOrHide('before_filtering_summary')>Before filtering</div>\n";
     ofs << "<div id='before_filtering_summary'>\n";
-    ofs << "<table class='summary_table'>\n";
+    ofs << "<table class='summary_table'>" << std::endl;;
 
     htmlutil::outputTableRow(ofs, "total_reads", preTotalReads);
     htmlutil::outputTableRow(ofs, "total_bases", preTotalBases);
@@ -137,7 +137,7 @@ void HtmlReporter::printSummary(std::ofstream& ofs, FilterResult* fresult, Stats
     }
     htmlutil::outputTableRow(ofs, "gc_content", postGCRate);
     ofs << "</table>\n";
-    ofs << "</div>\n";
+    ofs << "</div>" << std::endl;
 
     if(fresult){
         ofs << "<div class='subsection_title' onclick=showOrHide('filtering_result')>Filtering result</div>\n";
@@ -147,4 +147,53 @@ void HtmlReporter::printSummary(std::ofstream& ofs, FilterResult* fresult, Stats
     }
     ofs << "</table>\n";
     ofs << "</div>\n";
+}
+
+ void HtmlReporter::printCSS(std::ofstream& ofs){
+    ofs << "<style type=\"text/css\">" << std::endl;
+    ofs << "td {border:1px solid #dddddd;padding:5px;font-size:12px;}" << std::endl;
+    ofs << "table {border:1px solid #999999;padding:2x;border-collapse:collapse; width:800px}" << std::endl;
+    ofs << ".col1 {width:240px; font-weight:bold;}" << std::endl;
+    ofs << ".adapter_col {width:500px; font-size:10px;}" << std::endl;
+    ofs << "img {padding:30px;}" << std::endl;
+    ofs << "#menu {font-family:Consolas, 'Liberation Mono', Menlo, Courier, monospace;}" << std::endl;
+    ofs << "#menu a {color:#0366d6; font-size:18px;font-weight:600;line-height:28px;text-decoration:none;font-family:-apple-system, BlinkMacSystemFont, 'Segoe UI', Helv  etica, Arial, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol'}" << std::endl;
+    ofs << "a:visited {color: #999999}" << std::endl;
+    ofs << ".alignleft {text-align:left;}" << std::endl;
+    ofs << ".alignright {text-align:right;}" << std::endl;
+    ofs << ".figure {width:800px;height:600px;}" << std::endl;
+    ofs << ".header {color:#ffffff;padding:1px;height:20px;background:#000000;}" << std::endl;
+    ofs << ".section_title {color:#ffffff;font-size:20px;padding:5px;text-align:left;background:#663355; margin-top:10px;}" << std::endl;
+    ofs << ".subsection_title {font-size:16px;padding:5px;margin-top:10px;text-align:left;color:#663355}" << std::endl;
+    ofs << "#container {text-align:center;padding:3px 3px 3px 10px;font-family:Arail,'Liberation Mono', Menlo, Courier, monospace;}" << std::endl;
+    ofs << ".menu_item {text-align:left;padding-top:5px;font-size:18px;}" << std::endl;
+    ofs << ".highlight {text-align:left;padding-top:30px;padding-bottom:30px;font-size:20px;line-height:35px;}" << std::endl;
+    ofs << "#helper {text-align:left;border:1px dotted #fafafa;color:#777777;font-size:12px;}" << std::endl;
+    ofs << "#footer {text-align:left;padding:15px;color:#ffffff;font-size:10px;background:#663355;font-family:Arail,'Liberation Mono', Menlo, Courier, monospace;}" << std::endl;
+    ofs << ".kmer_table {text-align:center;font-size:8px;padding:2px;}" << std::endl;
+    ofs << ".kmer_table td{text-align:center;font-size:8px;padding:0px;color:#ffffff}" << std::endl;
+    ofs << ".sub_section_tips {color:#999999;font-size:10px;padding-left:5px;padding-bottom:3px;}" << std::endl;
+    ofs << "</style>" << std::endl;
+}
+
+void HtmlReporter::printHeader(std::ofstream& ofs, const std::string& title){
+    ofs << "<html><head><meta http-equiv=\"content-type\" content=\"text/html;charset=utf-8\" />";
+    ofs << "<title>" << title << " </title>";
+    printJS(ofs);        
+    printCSS(ofs);
+    ofs << "</head>";
+    ofs << "<body><div id='container'>";
+}
+
+void HtmlReporter::printJS(std::ofstream& ofs){
+    ofs << "<script src='https://cdn.plot.ly/plotly-latest.min.js'></script>" << std::endl;
+    ofs << "\n<script type=\"text/javascript\">" << std::endl;
+    ofs << "    function showOrHide(divname) {" << std::endl;
+    ofs << "        div = document.getElementById(divname);" << std::endl;
+    ofs << "        if(div.style.display == 'none')" << std::endl;
+    ofs << "            div.style.display = 'block';" << std::endl;
+    ofs << "        else" << std::endl;
+    ofs << "            div.style.display = 'none';" << std::endl;
+    ofs << "    }" << std::endl;
+    ofs << "</script>" << std::endl;
 }

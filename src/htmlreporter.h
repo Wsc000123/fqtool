@@ -59,6 +59,22 @@ class HtmlReporter{
          * @param postStats2 pointer to Stats object
          */
         void report(FilterResult* fresult, Stats* preStats1, Stats* postStats1, Stats* preStats2 = NULL, Stats* postStats2 = NULL);
+
+        /** print CSS of HTML
+        * @param ofs reference of std::ofstream
+        */
+        void printCSS(std::ofstream& ofs);
+
+        /** print header of HTML to ofs
+         * @param ofs reference of std::ofstream
+         * @param title title of HTML
+         */
+        void printHeader(std::ofstream& ofs, const std::string& title);
+
+        /** print JS of plotly
+        * @param ofs reference of std::ofstream
+        */
+        void printJS(std::ofstream& ofs);
 };
 
 #endif

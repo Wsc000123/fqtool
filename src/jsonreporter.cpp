@@ -133,4 +133,10 @@ void JsonReporter::report(FilterResult* fresult, Stats* preStats1, Stats* postSt
         ofs << "\t" << "}";
         ofs << "," << std::endl;
     }
+
+    if(mOptions->adapter.enableTriming){
+        ofs << "\t" << "\"adapter_trim\": ";
+        fresult->reportJsonBasic(ofs, "\t");
+        ofs << std::endl;
+    }
 }

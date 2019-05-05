@@ -28,7 +28,7 @@ namespace htmlutil{
         double num = (double)number;
         const std::string unit[6] = {"", "K", "M", "G", "T", "P"};
         int order = 0;
-        while(number > 1000.0){
+        while(num > 1000.0){
             order += 1;
             num /= 1000.0;
         }
@@ -48,22 +48,6 @@ namespace htmlutil{
         return std::to_string((double)numerator * 100.0 / (double) denominator);
     }
 
-    /** print JS of plotly
-     * @param ofs reference of std::ofstream
-     */ 
-    inline void printJS(std::ofstream& ofs){
-        ofs << "<script src='https://cdn.plot.ly/plotly-latest.min.js'></script>" << std::endl;
-        ofs << "\n<script type=\"text/javascript\">" << std::endl;
-        ofs << "    function showOrHide(divname) {" << std::endl;
-        ofs << "        div = document.getElementById(divname);" << std::endl;
-        ofs << "        if(div.style.display == 'none')" << std::endl;
-        ofs << "            div.style.display = 'block';" << std::endl;
-        ofs << "        else" << std::endl;
-        ofs << "            div.style.display = 'none';" << std::endl;
-        ofs << "    }" << std::endl;
-        ofs << "</script>" << std::endl;
-    }
-
     /** get current system time
      * @return current system time
      */
@@ -77,36 +61,6 @@ namespace htmlutil{
         return std::string(date);
     }
 
-    /** print CSS of HTML
-     * @param ofs reference of std::ofstream
-     */
-    inline void printCSS(std::ofstream& ofs){
-        ofs << "<style type=\"text/css\">" << std::endl;
-        ofs << "td {border:1px solid #dddddd;padding:5px;font-size:12px;}" << std::endl;
-        ofs << "table {border:1px solid #999999;padding:2x;border-collapse:collapse; width:800px}" << std::endl;
-        ofs << ".col1 {width:240px; font-weight:bold;}" << std::endl;
-        ofs << ".adapter_col {width:500px; font-size:10px;}" << std::endl;
-        ofs << "img {padding:30px;}" << std::endl;
-        ofs << "#menu {font-family:Consolas, 'Liberation Mono', Menlo, Courier, monospace;}" << std::endl;
-        ofs << "#menu a {color:#0366d6; font-size:18px;font-weight:600;line-height:28px;text-decoration:none;font-family:-apple-system, BlinkMacSystemFont, 'Segoe UI', Helv  etica, Arial, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol'}" << std::endl;
-        ofs << "a:visited {color: #999999}" << std::endl;
-        ofs << ".alignleft {text-align:left;}" << std::endl;
-        ofs << ".alignright {text-align:right;}" << std::endl;
-        ofs << ".figure {width:800px;height:600px;}" << std::endl;
-        ofs << ".header {color:#ffffff;padding:1px;height:20px;background:#000000;}" << std::endl;
-        ofs << ".section_title {color:#ffffff;font-size:20px;padding:5px;text-align:left;background:#663355; margin-top:10px;}" << std::endl;
-        ofs << ".subsection_title {font-size:16px;padding:5px;margin-top:10px;text-align:left;color:#663355}" << std::endl;
-        ofs << "#container {text-align:center;padding:3px 3px 3px 10px;font-family:Arail,'Liberation Mono', Menlo, Courier, monospace;}" << std::endl;
-        ofs << ".menu_item {text-align:left;padding-top:5px;font-size:18px;}" << std::endl;
-        ofs << ".highlight {text-align:left;padding-top:30px;padding-bottom:30px;font-size:20px;line-height:35px;}" << std::endl;
-        ofs << "#helper {text-align:left;border:1px dotted #fafafa;color:#777777;font-size:12px;}" << std::endl;
-        ofs << "#footer {text-align:left;padding:15px;color:#ffffff;font-size:10px;background:#663355;font-family:Arail,'Liberation Mono', Menlo, Courier, monospace;}" << std::endl;
-        ofs << ".kmer_table {text-align:center;font-size:8px;padding:2px;}" << std::endl;
-        ofs << ".kmer_table td{text-align:center;font-size:8px;padding:0px;color:#ffffff}" << std::endl;
-        ofs << ".sub_section_tips {color:#999999;font-size:10px;padding-left:5px;padding-bottom:3px;}" << std::endl;
-        ofs << "</style>" << std::endl;
-    }
-
     /** print footer of HTML 
      * @param ofs reference of std::ofstream
      * @param comment comment string
@@ -117,19 +71,6 @@ namespace htmlutil{
         ofs << comment << std::endl;
         ofs << " @ " << getCurrentSystemTime() << " </div>";
         ofs << "</body></html>";
-    }
-
-    /** print header of HTML to ofs
-     * @param ofs reference of std::ofstream
-     * @param title title of HTML
-     */    
-    inline void printHeader(std::ofstream& ofs, const std::string& title){
-        ofs << "<html><head><meta http-equiv=\"content-type\" content=\"text/html;charset=utf-8\" />";
-        ofs << "<title>" << title << " </title>";
-        printJS(ofs);
-        printCSS(ofs);
-        ofs << "</head>";
-        ofs << "<body><div id='container'>";
     }
 }
 

@@ -14,10 +14,12 @@
 #include "filter.h"
 #include "fqreader.h"
 #include "duplicate.h"
+#include "jsonreporter.h"
 #include "umiprocessor.h"
 #include "filterresult.h"
 #include "writerthread.h"
 #include "threadconfig.h"
+#include "htmlreporter.h"
 #include "adaptertrimmer.h"
 
 

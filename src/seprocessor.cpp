@@ -271,12 +271,12 @@ bool SingleEndProcessor::process(){
         std::cerr << "Duplicate rate(may be overestimated since this is SE data): " << dupRate << std::endl;
     }
     
-    // JsonReporter jr(mOptions);
-    // jr.setDupHist(dupHist, dupMeanGC, dupRate);
-    // jr.report(finalFilterResult, finalPreStats, finalPostStats);
-    // HtmlReporter hr(mOptions);
-    // hr.setDupHist(dupHist, dupMeanGC, dupRate);
-    // hr.report(finalFilterResult, finalPreStats, finalPostStats);
+    JsonReporter jr(mOptions);
+    jr.setDupHist(dupHist, dupMeanGC, dupRate);
+    jr.report(finalFilterResult, finalPreStats, finalPostStats);
+    HtmlReporter hr(mOptions);
+    hr.setDupHist(dupHist, dupMeanGC, dupRate);
+    hr.report(finalFilterResult, finalPreStats, finalPostStats);
 
     // clean up
     for(int t=0; t<mOptions->thread; t++){
