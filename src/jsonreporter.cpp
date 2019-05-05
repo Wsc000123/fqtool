@@ -87,7 +87,7 @@ void JsonReporter::report(FilterResult* fresult, Stats* preStats1, Stats* postSt
          jsonutil::writeRecord(ofs, "\t\t", "read2_mean_length", postRead2Length);
     }
     jsonutil::writeRecord(ofs, "\t\t", "gc_content", postGCRate);
-    ofs << "\t\t" << "}" << std::endl;
+    ofs << "\t\t" << "}," << std::endl;
 
     if(fresult){
         ofs << "\t\t" << "\"filtering_result\": ";
