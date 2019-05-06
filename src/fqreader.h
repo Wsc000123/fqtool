@@ -7,6 +7,7 @@
 #include <cstdio>
 #include <fstream>
 #include <cstdlib>
+#include <cstring>
 #include <iostream>
 
 /** Class to hold a fastq reader

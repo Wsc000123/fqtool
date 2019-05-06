@@ -6,6 +6,7 @@
 #include <string>
 #include <memory>
 #include <sstream>
+#include <cstring>
 
 /** class represent a nucleotide in a sequence */
 class NucleotideNode{

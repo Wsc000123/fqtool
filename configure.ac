@@ -4,6 +4,7 @@ AC_INIT([fqtool], [0.0.0], [wljlinksly@gmail.com])
 AM_INIT_AUTOMAKE(foreign)
 AC_CONFIG_SRCDIR([src/main.cpp])
 AC_CONFIG_HEADERS([config.h])
+AC_PREFIX_DEFAULT(/usr/local/)
 
 # Checks for programs.
 AC_PROG_CXX
