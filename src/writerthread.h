@@ -8,7 +8,6 @@
 #include <vector>
 #include <mutex>
 #include <atomic>
-#include "common.h"
 #include "util.h"
 #include "writer.h"
 #include "options.h"

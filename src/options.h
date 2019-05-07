@@ -18,8 +18,8 @@ struct BufferSizeOptions{
     size_t maxPacksInMemory;       ///< max number of ReadPacks in memory allowed
     BufferSizeOptions(){
         maxPacksInReadPackRepo = 1000;
-        maxReadsInPack = 1000;
-        maxPacksInMemory = 500;
+        maxReadsInPack = 1000000;
+        maxPacksInMemory = 5;
     }
 };
 

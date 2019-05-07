@@ -9,7 +9,6 @@
 #include <cmath>
 #include "options.h"
 #include "read.h"
-#include "common.h"
 #include "overlapanalysis.h"
 
 /** Class to do reads duplication analysis */
