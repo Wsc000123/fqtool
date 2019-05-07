@@ -107,9 +107,9 @@ int main(int argc, char** argv){
     app.add_option("--file_lines", opt->split.size, "split output file line limit")->needs(split_by_ln);
     app.add_option("--split_prefix_digits", opt->digits, "the digits for sequential output", true)->check(CLI::Range(1, 10));
     // buffer size options
-    app.add_option("--max_packs_in_repo", opt->bufSize.maxPacksInReadPackRepo, "maximum packs a pack repository can hold", true)->check(CLI::Range(100, 10000));
-    app.add_option("--max_reads_in_pack", opt->bufSize.maxReadsInPack, "maximum read/pairs a pack can hold", true)->check(CLI::Range(100, 1000));
-    app.add_option("--max_packs_in_memory", opt->bufSize.maxPacksInMemory, "maximum packs in memory", true)->check(CLI::Range(100, 500));
+    app.add_option("--max_packs_in_repo", opt->bufSize.maxPacksInReadPackRepo, "maximum packs a pack repository can hold", true)->check(CLI::Range(1, 1000000));
+    app.add_option("--max_reads_in_pack", opt->bufSize.maxReadsInPack, "maximum read/pairs a pack can hold", true)->check(CLI::Range(1, 1000000));
+    app.add_option("--max_packs_in_memory", opt->bufSize.maxPacksInMemory, "maximum packs in memory", true)->check(CLI::Range(1, 1000000));
     // parse args
     CLI_PARSE(app, argc, argv);
     // update options

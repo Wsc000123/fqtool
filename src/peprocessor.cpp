@@ -55,7 +55,7 @@ void PairEndProcessor::initOutput(){
         return;
     }
     mLeftWriter = new WriterThread(mOptions, mOptions->out1);
-    if(mOptions->out2.empty()){
+    if(!mOptions->out2.empty()){
         mRightWriter = new WriterThread(mOptions, mOptions->out2);
     }
 }
