@@ -366,8 +366,8 @@ namespace util{
      * @param upper convert result to uppercase if true
      */
     inline void get_valid(std::string& str, bool upper = false){
-        size_t total = 0;
-        for(size_t i = 0; i < str.size(); ++i){
+        uint16_t total = 0;
+        for(uint16_t i = 0; i < str.size(); ++i){
             if(std::isalpha(str[i]) || str[i] == '-' || str[i] == '*'){
                 str[total++] = (upper ? std::toupper(str[i]) : str[i]);
             }
@@ -396,7 +396,7 @@ namespace util{
      */
     inline int hamming(const std::string& str1, const std::string& str2){
         int diff = std::abs((int)(str1.size() - str2.size()));
-        for(size_t i = 0; i < std::min(str1.size(), str2.size()); ++i){
+        for(uint16_t i = 0; i < std::min(str1.size(), str2.size()); ++i){
             diff += (str1[i] == str2[i] ? 0 : 1);
         }
         return diff;
@@ -423,9 +423,9 @@ namespace util{
      * @return string representation of phred33 based score
      */
     template<typename T>
-    inline std::string qual2str(T *a, size_t l){
+    inline std::string qual2str(T *a, uint16_t l){
         std::string qstr(l, '\0');
-        for(size_t i = 0; i < l; ++i){
+        for(uint16_t i = 0; i < l; ++i){
             qstr[i] = (char)(33 + a[i]);
         }
         return qstr;
@@ -450,6 +450,18 @@ namespace util{
         }
     }
 
+    /** get reverse completement sequence of a nucleotide sequence
+     * @param seq a nucleotide sequence
+     * @return the reverse completement sequence of seq
+     */
+    inline std::string reverseComplete(const std::string& seq){
+        std::string retSeq(seq.length(), '\0');
+        for(int32_t i = retSeq.length() - 1; i >= 0; --i){
+            retSeq[i] = complement(seq[seq.length() - 1 - i]);
+        }
+        return retSeq;
+    }
+
     /** write a log message to std::cerr in a thread-safe way
      * @param s log message 
      * @param logmtx reference to a std::mutex object
@@ -458,7 +470,11 @@ namespace util{
         std::lock_guard<std::mutex> l(logmtx);
         time_t tt = time(NULL);
         tm* t = std::localtime(&tt);
-        std::cerr << "[" << t->tm_hour << ":" << t->tm_min << ":" << t->tm_sec << "] " << s << std::endl;
+        char date[60] = {0};
+        std::sprintf(date, "[%d-%02d-%02d %02d:%02d:%02d] ",
+                t->tm_year + 1900, t->tm_mon + 1, t->tm_mday,
+                t->tm_hour, t->tm_min, t->tm_sec);
+        std::cerr << date << s << std::endl;
     }
 
     /** make a list from file by line 
@@ -529,12 +545,26 @@ namespace util{
      * @param n array name to show
      */
     template<typename T>
-    inline void show_array(const T* a, size_t l, const std::string& n){
+    inline void show_array(const T* a, uint16_t l, const std::string& n){
         std::cout << n << ":";
-        for(size_t i = 0; i < l; ++i){
+        for(uint16_t i = 0; i < l; ++i){
             std::cout << a[i] << " ";
         }
         std::cout << std::endl;
+    }
+
+    /** count different neighbor pairs in a string
+     * @param str a string
+     * @return different neighbor pairs in this string
+     */
+    inline int neighbor_diff_count(const std::string& str){
+        int diff = 0;
+        for(uint32_t i = 0; i < str.length() - 1; ++i){
+            if(str[i] != str[i+1]){
+                ++diff;
+            }
+        }
+        return diff;
     }
 }
 

@@ -17,7 +17,7 @@ AC_PROG_CPP
 AC_CHECK_HEADERS([fcntl.h inttypes.h limits.h stdlib.h string.h unistd.h])
 
 # Checks for typedefs, structures, and compiler characteristics.
-AC_SUBST(AM_CXXFLAGS, "-std=c++11 -g -Wall -O3 -Wextra -Wno-unknown-pragmas -Wno-unused-parameter -Wno-sign-compare")
+AC_SUBST(AM_CXXFLAGS, "-std=c++11 -g -Wall -O3 -Wextra -Wno-unknown-pragmas -Wno-unused-parameter -Wno-sign-compare -Wno-unused-variable")
 AC_SUBST(LDFLAGS, "$LDFLAGS -pthread -lz")
 AC_CHECK_HEADER_STDBOOL
 AC_C_INLINE
