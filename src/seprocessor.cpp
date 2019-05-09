@@ -78,18 +78,15 @@ void SingleEndProcessor::producePack(ReadPack* pack){
 
 void SingleEndProcessor::producerTask(){
     util::loginfo("loading data started", mOptions->logmtx);
-    size_t lastReported = 0; // total number of reads have been loaded into memory
-    int slept = 0;  // #sleep happened
-    size_t readNum = 0;  // total number of reads have been loaded into memory and put into mReop
+    size_t readNum = 0;
     Read** data = new Read*[mOptions->bufSize.maxReadsInPack];
     std::memset(data, 0, sizeof(Read*) * mOptions->bufSize.maxReadsInPack);
     FqReader reader(mOptions->in1, true, mOptions->phred64);
-    size_t count = 0; // number of reads have been loaded into memory and put into data but not mReop 
-    bool needToBreak = false;
+    size_t count = 0;
     while(true){
         Read* read = reader.read();
-        if(!read || needToBreak){
-            // last read have got or the first N reads needed have got
+        ++readNum;
+        if(!read){
             ReadPack* pack = new ReadPack;
             pack->data = data;
             pack->count = count;
@@ -104,43 +101,27 @@ void SingleEndProcessor::producerTask(){
         }
         data[count] = read;
         ++count;
-        // if only need to process the first N reads
-        if(mOptions->readsToProcess > 0 && count + readNum >= mOptions->readsToProcess){
-            needToBreak = true;
-        }
-        if(count + readNum >= lastReported + 1000000){
-            lastReported = count + readNum;
-            std::string msg = "loaded " + std::to_string(lastReported/1000000) + "M reads";
-            util::loginfo(msg, mOptions->logmtx);
-        }
-        // the pack is full or first N reads needed have got
-        if(count == mOptions->bufSize.maxReadsInPack || needToBreak){
+        if(count == mOptions->bufSize.maxReadsInPack){
             ReadPack* pack = new ReadPack;
             pack->data = data;
             pack->count = count;
             producePack(pack);
-            //re-initialize data for next pack
             data = new Read*[mOptions->bufSize.maxReadsInPack];
             std::memset(data, 0, sizeof(Read*) * mOptions->bufSize.maxReadsInPack);
-            // if the consumer is far behind this producer, sleep and wait to limit memory usage
             while(mRepo.writePos - mRepo.readPos > mOptions->bufSize.maxPacksInMemory){
-                ++slept;
                 usleep(100);
             }
             readNum += count;
-            // if the writer threads are far behind this producer, sleep and wait
             if(readNum % (mOptions->bufSize.maxReadsInPack * mOptions->bufSize.maxPacksInMemory) == 0 && mLeftWriter){
                 while(mLeftWriter->bufferLength() > mOptions->bufSize.maxPacksInMemory){
-                    ++slept;
                     usleep(100);
                 }
             }
-            // rest count to 0
             count = 0;
         }
     }
     mProduceFinished = true;
-    util::loginfo("all reads loaded, start to monitor thread status", mOptions->logmtx);
+    util::loginfo("loaded reads: " + std::to_string(readNum - 1), mOptions->logmtx);
 }
 
 void SingleEndProcessor::consumerTask(ThreadConfig* config){
@@ -157,14 +138,12 @@ void SingleEndProcessor::consumerTask(ThreadConfig* config){
         }
         if(mProduceFinished && mRepo.writePos == mRepo.readPos){
             ++mFinishedThreads;
-            std::string msg = "thread " + std::to_string(config->getThreadId() + 1) + " data processing finished";
-            util::loginfo(msg, mOptions->logmtx);
+            util::loginfo("thead " + std::to_string(config->getThreadId()) + " data processing finished", mOptions->logmtx);
             break;
         }
-        std::string msg = "thread " + std::to_string(config->getThreadId() + 1) + " is processing the " +
-                           std::to_string(mRepo.readPos) + "/" + std::to_string(mRepo.writePos) + " pack";
-        util::loginfo(msg, mOptions->logmtx);
+        util::loginfo("thread " + std::to_string(config->getThreadId()) + " start processing pack " + std::to_string(mRepo.readPos) + "/" + std::to_string(mRepo.writePos) + " pack", mOptions->logmtx); 
         consumePack(config);
+        util::loginfo("thread " + std::to_string(config->getThreadId()) + " finish processing pack " + std::to_string(mRepo.readPos) + "/" + std::to_string(mRepo.writePos) + " pack", mOptions->logmtx); 
     }
     if(mFinishedThreads == mOptions->thread){
         if(mLeftWriter){
@@ -174,8 +153,7 @@ void SingleEndProcessor::consumerTask(ThreadConfig* config){
             mFailedWriter->setInputCompleted();
         }
     }
-    std::string msg = "thread " + std::to_string(config->getThreadId() + 1) + " finished";
-    util::loginfo(msg, mOptions->logmtx);
+    util::loginfo("thread " + std::to_string(config->getThreadId()) + " finished word", mOptions->logmtx);
 }
 
 void SingleEndProcessor::consumePack(ThreadConfig* config){
@@ -206,39 +184,46 @@ bool SingleEndProcessor::process(){
         initOutput();
     }
     initReadPackRepository();
+    util::loginfo("read pack repo initialized", mOptions->logmtx);
     std::thread producer(std::bind(&SingleEndProcessor::producerTask, this));
-
+    util::loginfo("producer thread started", mOptions->logmtx);
     ThreadConfig** configs = new ThreadConfig*[mOptions->thread];
     for(int t = 0; t < mOptions->thread; ++t){
         configs[t] = new ThreadConfig(mOptions, t, false);
         initConfig(configs[t]);
     }
-
     std::thread** threads = new std::thread*[mOptions->thread];
     for(int t = 0; t < mOptions->thread; ++t){
         threads[t] = new std::thread(std::bind(&SingleEndProcessor::consumerTask, this, configs[t]));
     }
-
+    util::loginfo(std::to_string(mOptions->thread) + " working threads started", mOptions->logmtx);
     std::thread* leftWriterThread = NULL;
     if(mLeftWriter){
         leftWriterThread = new std::thread(std::bind(&SingleEndProcessor::writeTask, this, mLeftWriter));
+        util::loginfo("read1 writer thread started", mOptions->logmtx);
     }
     std::thread* failedWriterThread = NULL;
     if(mFailedWriter){
         failedWriterThread = new std::thread(std::bind(&SingleEndProcessor::writeTask, this, mFailedWriter));
+        util::loginfo("failed reads writer thread started", mOptions->logmtx);
     }
     producer.join();
+    util::loginfo("producer thread finished", mOptions->logmtx);
     for(int t = 0; t < mOptions->thread; ++t){
         threads[t]->join();
     }
-
+    util::loginfo("working threads finished", mOptions->logmtx);
     if(!mOptions->split.enabled){
         if(leftWriterThread){
             leftWriterThread->join();
+            util::loginfo("read1 writer thread finished", mOptions->logmtx);
         }
     }
+    if(mFailedWriter){
+        failedWriterThread->join();
+        util::loginfo("failed reads writer thread finished", mOptions->logmtx);
+    }
     util::loginfo("start to generate reports\n", mOptions->logmtx);
-    // merge stats and read filter results
     std::vector<Stats*> preStats;
     std::vector<Stats*> postStats;
     std::vector<FilterResult*> filterResults;
@@ -251,12 +236,6 @@ bool SingleEndProcessor::process(){
     Stats* finalPostStats = Stats::merge(postStats);
     FilterResult* finalFilterResult = FilterResult::merge(filterResults);
     // output filter results
-    std::cerr << "Read1 before filtering: " << std::endl;
-    std::cerr << finalPreStats << std::endl;
-    std::cerr << "Read1 after filtering: " << std::endl;
-    std::cerr << finalPostStats << std::endl;
-    std::cerr << "Filtering result:" << std::endl;
-    std::cerr << finalFilterResult << std::endl;
     size_t* dupHist = NULL;
     double* dupMeanGC = NULL;
     double dupRate = 0.0;
@@ -267,17 +246,14 @@ bool SingleEndProcessor::process(){
         dupMeanGC = new double[mOptions->duplicate.histSize];
         std::memset(dupMeanGC, 0, sizeof(double) * mOptions->duplicate.histSize);
         dupRate = mDuplicate->statAll(dupHist, dupMeanGC, mOptions->duplicate.histSize);
-        std::cerr << std::endl;
-        std::cerr << "Duplicate rate(may be overestimated since this is SE data): " << dupRate << std::endl;
     }
-    
     JsonReporter jr(mOptions);
     jr.setDupHist(dupHist, dupMeanGC, dupRate);
     jr.report(finalFilterResult, finalPreStats, finalPostStats);
     HtmlReporter hr(mOptions);
     hr.setDupHist(dupHist, dupMeanGC, dupRate);
     hr.report(finalFilterResult, finalPreStats, finalPostStats);
-
+    util::loginfo("finish generating reports", mOptions->logmtx);
     // clean up
     for(int t=0; t<mOptions->thread; t++){
         delete threads[t];
@@ -418,6 +394,5 @@ void SingleEndProcessor::writeTask(WriterThread* config){
         }
         config->output();
     }
-    std::string msg = config->getFilename() + " writer finished";
-    util::loginfo(msg, mOptions->logmtx);
+    util::loginfo(config->getFilename() + " writer finished", mOptions->logmtx);
 }

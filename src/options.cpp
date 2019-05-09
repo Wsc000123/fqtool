@@ -13,7 +13,6 @@ Options::Options(){
     phred64 = false;
     inputFromSTDIN = false;
     outputToSTDOUT = false;
-    readsToProcess = 0;
     interleavedInput = false;
     insertSizeMax = 512;
     overlapDiffLimit = 5;

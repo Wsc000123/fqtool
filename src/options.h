@@ -318,7 +318,6 @@ struct Options{
     bool inputFromSTDIN;          ///< read from STDIN
     bool outputToSTDOUT;          ///< write to STDOUT
     bool interleavedInput;        ///< the input read1(in1) file is an interleaved PE fastq
-    size_t readsToProcess;           ///< number of reads to process
     int thread;                   ///< number of threads to do paralel work
     int insertSizeMax;            ///< maximum value of insert size
     int overlapRequire;           ///< overlap region minimum length
