@@ -22,7 +22,6 @@ void JsonReporter::setInsertHist(long* insertHist, int insertSizePeak){
 
 void JsonReporter::report(FilterResult* fresult, Stats* preStats1, Stats* postStats1, Stats* preStats2, Stats* postStats2){
     std::ofstream ofs(mOptions->jsonFile);
-    ofs << "{" << std::endl;
     long preTotalReads = preStats1->getReads();
     long preTotalBases = preStats1->getBases();
     long preQ20Bases = preStats1->getQ20();
@@ -60,89 +59,77 @@ void JsonReporter::report(FilterResult* fresult, Stats* preStats1, Stats* postSt
     double postQ30Rate = postTotalBases == 0 ? 0.0 : (double)postQ30Bases / postTotalBases;
     double postGCRate = postTotalBases == 0 ? 0.0 : (double)postTotalGC / postTotalBases;
 
-    ofs << "\t" << "\"summary\": {" << std::endl;
-    ofs << "\t\t" << "\"before_filtering\": {" << std::endl;
-    jsonutil::writeRecord(ofs, "\t\t", "total_reads", preTotalReads);
-    jsonutil::writeRecord(ofs, "\t\t", "total_bases", preTotalBases);
-    jsonutil::writeRecord(ofs, "\t\t", "Q20_bases", preQ20Bases);
-    jsonutil::writeRecord(ofs, "\t\t", "Q30_bases", preQ30Bases);
-    jsonutil::writeRecord(ofs, "\t\t", "Q20_rate", preQ20Rate);
-    jsonutil::writeRecord(ofs, "\t\t", "Q30_rate", preQ30Rate);
-    jsonutil::writeRecord(ofs, "\t\t", "read1_mean_length", preRead1Length);
+    // whole report
+    jsn::json jReport;
+    // pre filtering qc summary
+    jsn::json jPreFilterQC;
+    jPreFilterQC["total_reads"] = preTotalReads;
+    jPreFilterQC["total_bases"] = preTotalBases;
+    jPreFilterQC["Q20_bases"] = preQ20Bases;
+    jPreFilterQC["Q30_bases"] = preQ30Bases;
+    jPreFilterQC["Q20_rate"] = preQ20Rate;
+    jPreFilterQC["Q30_rate"] = preQ30Rate;
+    jPreFilterQC["read1_mean_length"] = preRead1Length;
     if(mOptions->isPaired()){
-         jsonutil::writeRecord(ofs, "\t\t", "read2_mean_length", preRead2Length);
+        jPreFilterQC["read2_mean_length"] = preRead2Length;
     }
-    jsonutil::writeRecord(ofs, "\t\t", "gc_content", preGCRate);
-    ofs << "\t\t" << "}," << std::endl;
+    jPreFilterQC["gc_content"] = preGCRate;
+    jReport["summary"]["before_filtering"] = jPreFilterQC;
 
-    ofs << "\t\t" << "\"after_filtering\": {" << std::endl;
-    jsonutil::writeRecord(ofs, "\t\t", "total_reads", postTotalReads);
-    jsonutil::writeRecord(ofs, "\t\t", "total_bases", postTotalBases);
-    jsonutil::writeRecord(ofs, "\t\t", "Q20_bases", postQ20Bases);
-    jsonutil::writeRecord(ofs, "\t\t", "Q30_bases", postQ30Bases);
-    jsonutil::writeRecord(ofs, "\t\t", "Q20_rate", postQ20Rate);
-    jsonutil::writeRecord(ofs, "\t\t", "Q30_rate", postQ30Rate);
-    jsonutil::writeRecord(ofs, "\t\t", "read1_mean_length", postRead1Length);
+    // after filter qc summary
+    jsn::json jPostFilterQC;
+    jPostFilterQC["total_reads"] = postTotalReads;
+    jPostFilterQC["total_bases"] = postTotalBases;
+    jPostFilterQC["Q20_bases"] = postQ20Bases;
+    jPostFilterQC["Q30_bases"] = postQ30Bases;
+    jPostFilterQC["Q20_rate"] = postQ20Rate;
+    jPostFilterQC["Q30_rate"] = postQ30Rate;
+    jPostFilterQC["read1_mean_length"] = postRead1Length;
     if(mOptions->isPaired()){
-         jsonutil::writeRecord(ofs, "\t\t", "read2_mean_length", postRead2Length);
+        jPostFilterQC["read2_mean_length"] = postRead2Length;
     }
-    jsonutil::writeRecord(ofs, "\t\t", "gc_content", postGCRate);
-    ofs << "\t\t" << "}," << std::endl;
+    jPostFilterQC["gc_content"] = postGCRate;
+    jReport["summary"]["after_filtering"] = jPostFilterQC;
 
-    if(fresult){
-        ofs << "\t\t" << "\"filtering_result\": ";
-        fresult->reportJsonBasic(ofs, "\t\t");
-    }
-    ofs << "\t" << "}," << std::endl;
+    // filter result
+    jsn::json jFilterResult;
+    fresult->reportJsonBasic(jFilterResult);
+    jReport["filtering_result"] = jFilterResult;
 
+    // duplication result
     if(mOptions->duplicate.enabled){
-        ofs << "\t" << "\"duplication\": {" << std::endl;
-        ofs << "\t\t\"rate\": " << mDupRate << "," << std::endl;
-        ofs << "\t\t\"histogram\": [";
-        for(int d = 1; d < mOptions->duplicate.histSize; ++d){
-            ofs << mDupHist[d];
-            if(d != mOptions->duplicate.histSize - 1){
-                ofs << ",";
-            }
-        }
-        ofs << "]," << std::endl;
-        ofs << "\t\t\"mean_gc\": [";
-        for(int d = 1; d < mOptions->duplicate.histSize; ++d){
-            ofs << mDupMeanGC[d];
-            if(d != mOptions->duplicate.histSize - 1){
-                ofs << ",";
-            }
-        }
-        ofs << "]" << std::endl;
-        ofs << "\t" << "}";
-        ofs << "," << std::endl;
+        jsn::json jDupResult;
+        jDupResult["rate"] = mDupRate;
+        std::vector<int32_t> dupVec(mDupHist, mDupHist + mOptions->duplicate.histSize);
+        jDupResult["histogram"] = dupVec;
+        std::vector<double> gcVec(mDupMeanGC, mDupMeanGC + mOptions->duplicate.histSize);
+        jDupResult["mean_gc"] = gcVec;
+        jReport["duplication"] = jDupResult;
     }
 
+    // inset size result
     if(mOptions->isPaired()){
-        ofs << "\t" << "\"insert_size\": {" << std::endl;
-        ofs << "\t\t\"peak\": " << mInsertSizePeak << "," << std::endl;
-        ofs << "\t\t\"unknown\": " << mInsertHist[mOptions->insertSizeMax] << "," << std::endl;
-        ofs << "\t\t\"histogram\": [";
-        for(int d = 0; d < mOptions->insertSizeMax; ++d){
-            ofs << mInsertHist[d];
-            if(d!=mOptions->insertSizeMax-1){
-                ofs << ",";
-            }
-        }
-        ofs << "]" << std::endl;
-        ofs << "\t" << "}";
-        ofs << "," << std::endl;
+        jsn::json jInsert;
+        jInsert["peak"] = mInsertSizePeak;
+        jInsert["unknown"] = mInsertHist[mOptions->insertSizeMax];
+        std::vector<int32_t> insVec(mInsertHist, mInsertHist + mOptions->insertSizeMax);
+        jInsert["histogram"] = insVec;
+        jReport["insert_size"] = jInsert;
     }
 
+    // adapter trimming result
     if(mOptions->adapter.enableTriming){
-        ofs << "\t" << "\"adapter_trim\": ";
-        fresult->reportAdaptersJsonSummary(ofs, "\t");
+        jsn::json jAdapterTrim;
+        fresult->reportAdaptersJsonSummary(jAdapterTrim);
+        jReport["adapter_trim"] = jAdapterTrim;
     }
 
+    // polyx trimming result
     if(fresult && (mOptions->polyXTrim.enabled || mOptions->polyGTrim.enabled)){
-        ofs << "\t" << "\"polyx_trimming\": ";
-        fresult->reportPolyXTrimJson(ofs, "\t");
+        jsn::json jPolyXTrim;
+        fresult->reportPolyXTrimJson(jPolyXTrim);
+        jReport["polyx_trimming"] = jPolyXTrim;
     }
-
-    ofs << "}" << std::endl;
+    ofs << jReport;
+    ofs.close();
 }

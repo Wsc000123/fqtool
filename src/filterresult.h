@@ -8,10 +8,10 @@
 #include <vector>
 #include <fstream>
 #include <map>
+#include <json.hpp>
 #include "common.h"
 #include "options.h"
 #include "stats.h"
-#include "jsonutil.h"
 #include "htmlutil.h"
 
 /** Class to store/calculate read filter results */
@@ -94,10 +94,9 @@ class FilterResult{
         void addAdapterTrimmed(const std::string& adapter1, const std::string& adapter2);
 
         /** Report basic filter results to json file
-         * @param ofs output file stream
-         * @param padding padding before each json record
+         * @param j reference of json object
          */
-        void reportJsonBasic(std::ofstream& ofs, const std::string& padding);
+        void reportJsonBasic(jsn::json& j);
 
         /** Report basic filter results to html file
          * @param ofs output file stream
@@ -107,18 +106,15 @@ class FilterResult{
         void reportHtmlBasic(std::ofstream& ofs, size_t totalReads, size_t totalBases);
 
         /** Report detailed trimmed adapter sequence and counts in json fomat
-         * @param ofs output file stream
+         * @param j reference of json object
          * @param adapterCounts adapter sequence counts map
          */
-        void reportAdaptersJsonDetails(std::ofstream& ofs, std::map<std::string, size_t>& adapterCounts);
+        void reportAdaptersJsonDetails(jsn::json& j, std::map<std::string, size_t>& adapterCounts);
         
         /** Report summary trimmed adapter sequence and counts in json format
-         * @param ofs output file stream
-         * @param padding padding before each json record
-         * @param adapterSeq1 read1 adapter sequence
-         * @param adapterSeq2 read2 adapter seqeunce
+         * @param j reference of json object
          */
-        void reportAdaptersJsonSummary(std::ofstream& ofs, const std::string& padding);
+        void reportAdaptersJsonSummary(jsn::json& j);
         
         /** Report detailed trimmed adapter sequence and counts in html format
          * @param ofs output file stream
@@ -171,10 +167,9 @@ class FilterResult{
         void addPolyXTrimmed(int base, int length);
 
         /** report polyx trimming statistics in json
-         * @param ofs reference of ofstream
-         * @param padding json padding str
+         * @param j reference of json object
          */
-        void reportPolyXTrimJson(std::ofstream& ofs, const std::string& padding);
+        void reportPolyXTrimJson(jsn::json& j);
 };
 
 #endif

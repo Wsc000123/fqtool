@@ -201,25 +201,23 @@ std::ostream& operator<<(std::ostream& os, FilterResult* re){
     return os;
 }
 
-void FilterResult::reportJsonBasic(std::ofstream& ofs, const std::string& padding){
-    ofs << "{\n";
-    jsonutil::writeRecord(ofs, padding, "passed_filter_reads", mFilterReadStats[COMMONCONST::PASS_FILTER]);
-    jsonutil::writeRecord(ofs, padding, "low_quality_reads", mFilterReadStats[COMMONCONST::FAIL_QUALITY]);
-    jsonutil::writeRecord(ofs, padding, "too_many_N_reads", mFilterReadStats[COMMONCONST::FAIL_N_BASE]);
+void FilterResult::reportJsonBasic(jsn::json& j){
+    j["passed_filter_reads"] = mFilterReadStats[COMMONCONST::PASS_FILTER];
+    j["low_quality_reads"] = mFilterReadStats[COMMONCONST::FAIL_QUALITY];
+    j["too_many_N_reads"] = mFilterReadStats[COMMONCONST::FAIL_N_BASE];
     if(mOptions->correction.enabled){
-        jsonutil::writeRecord(ofs, padding, "corrected_reads", mCorrectedReads);
-        jsonutil::writeRecord(ofs, padding, "corrected_bases", getTotalCorrectedBases());
+        j["corrected_reads"] = mCorrectedReads;
+        j["corrected_bases"] = getTotalCorrectedBases();
     }
     if(mOptions->complexityFilter.enabled){
-        jsonutil::writeRecord(ofs, padding, "low_complexity_reads", mFilterReadStats[COMMONCONST::FAIL_COMPLEXITY]);
+        j["low_complexity_reads"] = mFilterReadStats[COMMONCONST::FAIL_COMPLEXITY];
     }
     if(mOptions->lengthFilter.enabled){
-        jsonutil::writeRecord(ofs, padding, "too_short_reads", mFilterReadStats[COMMONCONST::FAIL_LENGTH]);
+        j["too_short_reads"] = mFilterReadStats[COMMONCONST::FAIL_LENGTH];
         if(mOptions->lengthFilter.maxReadLength > 0){
-            jsonutil::writeRecord(ofs, padding, "too_long_reads", mFilterReadStats[COMMONCONST::FAIL_TOO_LONG]);
+            j["too_long_reads"] = mFilterReadStats[COMMONCONST::FAIL_TOO_LONG];
         }
     }
-    ofs << padding << "}," << std::endl;
 }
 
 void FilterResult::reportHtmlBasic(std::ofstream& ofs, size_t totalReads, size_t totalBases){
@@ -243,7 +241,7 @@ void FilterResult::reportHtmlBasic(std::ofstream& ofs, size_t totalReads, size_t
     ofs << "</table>\n";
 }
 
-void FilterResult::reportAdaptersJsonDetails(std::ofstream& ofs, std::map<std::string, size_t>& adapterCounts){
+void FilterResult::reportAdaptersJsonDetails(jsn::json& j, std::map<std::string, size_t>& adapterCounts){
     size_t totalAdapters = 0;
     for(auto& e: adapterCounts){
         totalAdapters += e.second;
@@ -252,27 +250,17 @@ void FilterResult::reportAdaptersJsonDetails(std::ofstream& ofs, std::map<std::s
         return;
     }
     const double dTotalAdapters = (double)totalAdapters;
-    bool firstItem = true;
     size_t reported = 0;
     for(auto& e: adapterCounts){
         if(e.second / dTotalAdapters < mOptions->adapter.reportThreshold){
             continue;
         }
-        if(!firstItem){
-            ofs << ", ";
-        }else{
-            firstItem = false;
-        }
-        ofs << "\"" << e.first << "\":" << e.second;
+        j[e.first] = e.second;
         reported += e.second;
     }
     size_t unreported = totalAdapters - reported;
     if(unreported > 0){
-        if(!firstItem){
-            ofs << ", ";
-        }else{
-            ofs << "\"" << "others" << "\":" << unreported;
-        }
+        j["others"] = unreported;
     }
 }
 
@@ -316,26 +304,21 @@ void FilterResult::reportAdaptersHtmlDetails(std::ofstream& ofs, std::map<std::s
     ofs << "</table>\n";
 }
 
-void FilterResult::reportAdaptersJsonSummary(std::ofstream& ofs, const std::string& padding){
-    ofs << "{\n";
-    jsonutil::writeRecord(ofs, padding, "adapter_trimmed_reads", mTrimmedAdapterReads);
-    jsonutil::writeRecord(ofs, padding, "adapter_trimmed_bases", mTrimmedAdapterBases);
-    jsonutil::writeRecord(ofs, padding, "read1_adapter_sequence",
-                          mOptions->adapter.adapterSeqR1Provided ? mOptions->adapter.inputAdapterSeqR1 : mOptions->adapter.detectedAdapterSeqR1);
+void FilterResult::reportAdaptersJsonSummary(jsn::json& j){
+    j["adapter_trimmed_reads"] = mTrimmedAdapterReads;
+    j["adapter_trimmed_bases"] = mTrimmedAdapterBases;
+    j["read1_adapter_sequence"] = mOptions->adapter.adapterSeqR1Provided ? mOptions->adapter.inputAdapterSeqR1 : mOptions->adapter.detectedAdapterSeqR1;
     if(mPaired){
-        jsonutil::writeRecord(ofs, padding, "read2_adapter_sequence",
-                          mOptions->adapter.adapterSeqR2Provided ? mOptions->adapter.inputAdapterSeqR2 : mOptions->adapter.detectedAdapterSeqR2);
+        j["read2_adapter_sequence"] = mOptions->adapter.adapterSeqR2Provided ? mOptions->adapter.inputAdapterSeqR2 : mOptions->adapter.detectedAdapterSeqR2;
     }
-    ofs << padding << "\t" << "\"read1_adapter_counts\": " << "{";
-    reportAdaptersJsonDetails(ofs, mAdapter1Count);
-    ofs << "}";
+    jsn::json jR1AdapterCount;
+    reportAdaptersJsonDetails(jR1AdapterCount, mAdapter1Count);
+    j["read1_adapter_counts"] = jR1AdapterCount;
     if(mPaired){
-        ofs << ",\n";
-        ofs << padding << "\t" << "\"read2_adapter_counts\": " << "{";
-        reportAdaptersJsonDetails(ofs, mAdapter2Count);
-        ofs << "},\n";
+        jsn::json jR2AdapterCount;
+        reportAdaptersJsonDetails(jR2AdapterCount, mAdapter2Count);
+        j["read2_adapter_counts"] = jR2AdapterCount;
     }
-    ofs << padding << "}," << std::endl;
 }
 
 void FilterResult::reportAdaptersHtmlSummary(std::ofstream& ofs, size_t totalBases){
@@ -351,28 +334,18 @@ void FilterResult::reportAdaptersHtmlSummary(std::ofstream& ofs, size_t totalBas
     }
 }
 
-void FilterResult::reportPolyXTrimJson(std::ofstream& ofs, const std::string& padding){
-    ofs << padding << "{" << std::endl;
+void FilterResult::reportPolyXTrimJson(jsn::json& j){
     const char atcg[4] = {'A', 'T', 'C', 'G'};
-    ofs << padding << "\t\"total_polyx_trimmed_reads\": " << std::accumulate(mTrimmedPolyXReads, mTrimmedPolyXReads + 4, 0) << "," << std::endl;
-    ofs << padding << "\t\"" << "polyx_trimmed_reads" << "\": {";
+    j["total_polyx_trimmed_reads"] = std::accumulate(mTrimmedPolyXReads, mTrimmedPolyXReads + 4, 0);
+    jsn::json jPolyReads;
     for(int b = 0; b < 4; ++b){
-        if(b > 0){
-            ofs << ", ";
-        }
-        ofs << "\"" << atcg[b] << "\": " << mTrimmedPolyXReads[b];
+        jPolyReads[atcg[b]] = mTrimmedPolyXReads[b];
     }
-    ofs << "}";
-    ofs << "," << std::endl;
-
-    ofs << padding << "\t\"total_polyx_trimmed_bases\": " << std::accumulate(mTrimmedPolyXBases, mTrimmedPolyXBases + 4, 0) << "," << std::endl;
-    ofs << padding << "\t\"" << "polyx_trimmed_bases" << "\": {";
+    j["polyx_trimmed_reads"] = jPolyReads;
+    j["total_polyx_trimmed_bases"] = std::accumulate(mTrimmedPolyXBases, mTrimmedPolyXBases + 4, 0);
+    jsn::json jPolyBases;
     for(int b = 0; b < 4; ++b){
-        if(b > 0){
-            ofs << ", ";
-        }
-        ofs << "\"" << atcg[b] << "\": " << mTrimmedPolyXBases[b];
+        jPolyBases[atcg[b]] = mTrimmedPolyXBases[b];
     }
-    ofs << "}\n";
-    ofs << "\t}," << std::endl;
+    j["polyx_trimmed_bases"] = jPolyBases;
 }

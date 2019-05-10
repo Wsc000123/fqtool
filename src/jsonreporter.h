@@ -2,11 +2,12 @@
 #define JSON_REPORTER_H
 
 #include <iostream>
+#include <array>
 #include <fstream>
 #include <string>
+#include <json.hpp>
 #include "stats.h"
 #include "options.h"
-#include "jsonutil.h"
 #include "filterresult.h"
 
 /** class to do json report of qc summary information */
