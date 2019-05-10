@@ -425,7 +425,6 @@ CTML::Node Stats::reportHtmlORA(std::string filteringType, std::string readName)
     oraSectionTableHeader.AppendChild(CTML::Node("td", "distribution: cycle 1 ~ cycle " + std::to_string(mEvaluatedSeqLen)));
     oraSectionTable.AppendChild(oraSectionTableHeader);
     int found = 0;
-    std::stringstream ss;
     for(auto& e: mOverReqSeqCount){
         std::string seq = e.first;
         size_t count = e.second;
@@ -433,24 +432,29 @@ CTML::Node Stats::reportHtmlORA(std::string filteringType, std::string readName)
             continue;
         found++;
         double percent = (100.0 * count * seq.length() * mOverRepSampling)/dBases;
-        ss.clear();
         CTML::Node oraSectionTableRow("tr");
-        ss << "<td width='400' style='word-break:break-all;font-size:8px;'>" << seq << "</td>";
-        ss << "<td width='200'>" << count << " (" << std::to_string(percent) <<"%)</td>";
-        ss << "<td width='250'><canvas id='" << divName << "_" << seq << "' width='240' height='20'></td>";
-        oraSectionTableRow.AppendText(ss.str());
+        CTML::Node col1("td", seq);
+        col1.SetAttribute("width", "400").SetAttribute("style", "word-break:break-all;font-size:8px;");
+        CTML::Node col2("td", std::to_string(count) + "(" + std::to_string(percent) + "%)");
+        CTML::Node col3("td");
+        col3.SetAttribute("width", "250");
+        CTML::Node cavas("cavas#" + divName + "_" + seq);
+        cavas.UseClosingTag(false).SetAttribute("width", "240").SetAttribute("height", "20");
+        oraSectionTableRow.AppendChild(col1).AppendChild(col2).AppendChild(col3);
         oraSectionTable.AppendChild(oraSectionTableRow);
     }
     if(found == 0){
         CTML::Node oraSectionTableRowNt("tr");
-        oraSectionTableRowNt.AppendText("<td style='text-align:center' colspan='3'>not found</td></tr>");
+        CTML::Node col("td", "not found");
+        col.SetAttribute("style", "text-align:center").SetAttribute("colspan", "3");
+        oraSectionTableRowNt.AppendChild(col);
         oraSectionTable.AppendChild(oraSectionTableRowNt);
     }
     oraSectionID.AppendChild(oraSectionTable);
     CTML::Node oraSectionJS("script");
     oraSectionJS.SetAttribute("language", "javascript");
     // output the JS
-    ss.clear();
+    std::stringstream ss;
     ss << "var seqlen = " << mEvaluatedSeqLen << ";" << std::endl;
     ss << "var orp_dist = {" << std::endl;
     bool first = true;
@@ -493,7 +497,6 @@ CTML::Node Stats::reportHtmlORA(std::string filteringType, std::string readName)
     ss << "        ctx.fillRect(x,h-1, 1, -y);"<< std::endl;
     ss << "    }"<< std::endl;
     ss << "}"<< std::endl;
-    ss << "</script>"<< std::endl;
     oraSectionJS.AppendText(ss.str());
     oraSectionID.AppendChild(oraSectionJS);
     oraSection.AppendChild(oraSectionID);
