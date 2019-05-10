@@ -333,7 +333,7 @@ void FilterResult::reportAdaptersJsonSummary(std::ofstream& ofs, const std::stri
         ofs << ",\n";
         ofs << padding << "\t" << "\"read2_adapter_counts\": " << "{";
         reportAdaptersJsonDetails(ofs, mAdapter2Count);
-        ofs << "}\n";
+        ofs << "},\n";
     }
     ofs << padding << "}," << std::endl;
 }
