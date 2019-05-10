@@ -369,92 +369,6 @@ std::ostream& operator<<(std::ostream& os, const Stats& s){
     return os;
 }
 
-void Stats::reportJson(std::ofstream& ofs, std::string padding){
-    // braces
-    ofs << "{\n";
-    // basic qc info 
-    ofs << padding << "\t\"total_reads\": " << mReads << ",\n";
-    ofs << padding << "\t\"total_bases\": " << mBases << ",\n";
-    ofs << padding << "\t\"q20_bases\": " << mQ20Total << ",\n";
-    ofs << padding << "\t\"q30_bases\": " << mQ30Total << ",\n";
-    ofs << padding << "\t\"total_cycles\": " << mCycles << ",\n";
-    // quality curves
-    std::string qualNames[5] = {"A", "T", "C", "G", "mean"};
-    ofs << padding << "\t\"quality_curves\": {\n";
-    for(int i = 0; i < 5; ++i){
-        std::string name = qualNames[i];
-        double* curve = mQualityCurves[name];
-        ofs << padding << "\t\t\"" << name << "\":[";
-        for(int c = 0; c < mCycles; ++c){
-            ofs << curve[c];
-            if(c != mCycles - 1){
-                ofs << ",";
-            }
-        }
-        ofs << "]";
-        if(i != 4){
-            ofs << ",";
-        }
-        ofs << "\n";
-    }
-    ofs << padding << "\t},\n";
-    //content curves
-    std::string contentNames[6] = {"A", "T", "C", "G", "N", "GC"};
-    ofs << padding << "\t\"content_curves\":{\n";
-    for(int i = 0; i < 6; ++i){
-        std::string name = contentNames[i];
-        double* curve = mContentCurves[name];
-        ofs << padding << "\t\t\"" << name << "\":[";
-        for(int c = 0; c < mCycles; ++c){
-            ofs << curve[c];
-            if(c != mCycles - 1){
-                ofs << ",";
-            }
-        }
-        ofs << "]";
-        if(i != 5){
-            ofs << ",";
-        }
-        ofs << "\n";
-    }
-    ofs << padding << "\t}";
-    //KMER counting(optional)
-    std::string maxKmerInt = std::to_string(mKmerMax);
-    int maxWidth = maxKmerInt.length();
-    if(mKmerLen){
-        ofs << ",\n";
-        ofs << padding << "\t" << "\"kmer_count\": {\n";
-        for(int i = 0; i < mKmerBufLen; ++i){
-            std::string seq = Evaluator::int2seq(i, mKmerLen);
-            if(i % (1 << mKmerLen)){
-                ofs << "\"" << seq << "\":" << std::left << std::setw(maxWidth + 1) << std::to_string(mKmer[i]) +",";
-            }else{
-                ofs << "\n" << padding << "\t\t\"" << seq << "\":" << std::left << std::setw(maxWidth + 1) << std::to_string(mKmer[i]) + ",";
-            }
-        }
-        ofs << padding << "\t}";
-    }
-    // over represented seqs(optional)
-    if(mOverRepSampling){
-        ofs << ",\n";
-        ofs << padding << "\t\"overrepresented_sequences\": {\n";
-        bool first = true;
-        for(auto& e : mOverReqSeqCount){
-            if(!overRepPassed(e.first, e.second)){
-                continue;
-            }
-            if(!first){
-                ofs << ",\n";
-            }else{
-                first = false;
-            }
-            ofs << padding << "\t\t\"" << e.first << "\":" << e.second;
-        }
-        ofs << padding << "\t}\n";
-    }
-    ofs << padding << "\n}\n";
-}
-
 bool Stats::overRepPassed(const std::string& seq, size_t count){
     int s = mOverRepSampling;
     switch(seq.length()){
@@ -475,31 +389,43 @@ bool Stats::isLongRead(){
     return mCycles > 300;
 }
 
-void Stats::reportHtml(std::ofstream& ofs, std::string filteringType, std::string readName){
-    reportHtmlQuality(ofs, filteringType, readName);
-    reportHtmlContents(ofs, filteringType, readName);
+std::vector<CTML::Node> Stats::reportHtml(std::string filteringType, std::string readName){
+    std::vector<CTML::Node> r;
+    r.push_back(reportHtmlQuality(filteringType, readName));
+    r.push_back(reportHtmlContents(filteringType, readName));
     if(mKmerLen){
-        reportHtmlKmer(ofs, filteringType, readName);
+        r.push_back(reportHtmlKmer(filteringType, readName));
     }
     if(mOverRepSampling){
-        reportHtmlORA(ofs, filteringType, readName);
+        r.push_back(reportHtmlORA(filteringType, readName));
     }
+    return r;
 }
 
-void Stats::reportHtmlORA(std::ofstream& ofs, std::string filteringType, std::string readName){
+CTML::Node Stats::reportHtmlORA(std::string filteringType, std::string readName){
     double dBases = mBases;
     std::string subSection = filteringType + ": " + readName + ": overrepresented sequences";
     std::string divName = util::replace(subSection, " ", "_");
     divName = util::replace(divName, ":", "_");
     std::string title = "";
-    
-    ofs << "<div class='subsection_title'><a title='click to hide/show' onclick=showOrHide('";
-    ofs << divName << "')>" << subSection << "</a></div>\n";
-    ofs << "<div id='" << divName << "'>\n";
-    ofs << "<div class='sub_section_tips'>Sampling rate: 1 / " << mOverRepSampling << "</div>\n";
-    ofs << "<table class='summary_table'>\n";
-    ofs << "<tr style='font-weight:bold;'><td>overrepresented sequence</td><td>count (% of bases)</td><td>distribution: cycle 1 ~ cycle " << mEvaluatedSeqLen << "</td></tr>"<<std::endl;
+
+    CTML::Node oraSection("div.section_div");
+    CTML::Node oraSectionTitle("div.subsection_title");
+    CTML::Node oraSectionTitleLink("a", subSection);
+    oraSectionTitleLink.SetAttribute("title", "click to hide/show' onclick=showOrHide('" + divName + "')");
+    oraSectionTitle.AppendChild(oraSectionTitleLink);
+    oraSection.AppendChild(oraSectionTitle);
+    CTML::Node oraSectionID("div#" + divName);
+    oraSectionID.AppendChild(CTML::Node("div.sub_section_tips", "Sampling rate: 1/" + std::to_string(mOverRepSampling)));
+    CTML::Node oraSectionTable("table.summary_table");
+    CTML::Node oraSectionTableHeader("tr");
+    oraSectionTableHeader.SetAttribute("style", "font-weight:bold;");
+    oraSectionTableHeader.AppendChild(CTML::Node("td", "overrepresented sequence"));
+    oraSectionTableHeader.AppendChild(CTML::Node("td", "count (% of bases)"));
+    oraSectionTableHeader.AppendChild(CTML::Node("td", "distribution: cycle 1 ~ cycle " + std::to_string(mEvaluatedSeqLen)));
+    oraSectionTable.AppendChild(oraSectionTableHeader);
     int found = 0;
+    std::stringstream ss;
     for(auto& e: mOverReqSeqCount){
         std::string seq = e.first;
         size_t count = e.second;
@@ -507,21 +433,26 @@ void Stats::reportHtmlORA(std::ofstream& ofs, std::string filteringType, std::st
             continue;
         found++;
         double percent = (100.0 * count * seq.length() * mOverRepSampling)/dBases;
-        ofs << "<tr>";
-        ofs << "<td width='400' style='word-break:break-all;font-size:8px;'>" << seq << "</td>";
-        ofs << "<td width='200'>" << count << " (" << std::to_string(percent) <<"%)</td>";
-        ofs << "<td width='250'><canvas id='" << divName << "_" << seq << "' width='240' height='20'></td>";
-        ofs << "</tr>" << std::endl;
+        ss.clear();
+        CTML::Node oraSectionTableRow("tr");
+        ss << "<td width='400' style='word-break:break-all;font-size:8px;'>" << seq << "</td>";
+        ss << "<td width='200'>" << count << " (" << std::to_string(percent) <<"%)</td>";
+        ss << "<td width='250'><canvas id='" << divName << "_" << seq << "' width='240' height='20'></td>";
+        oraSectionTableRow.AppendText(ss.str());
+        oraSectionTable.AppendChild(oraSectionTableRow);
     }
-    if(found == 0)
-        ofs << "<tr><td style='text-align:center' colspan='3'>not found</td></tr>" << std::endl;
-    ofs << "</table>\n";
-    ofs << "</div>\n";
-
+    if(found == 0){
+        CTML::Node oraSectionTableRowNt("tr");
+        oraSectionTableRowNt.AppendText("<td style='text-align:center' colspan='3'>not found</td></tr>");
+        oraSectionTable.AppendChild(oraSectionTableRowNt);
+    }
+    oraSectionID.AppendChild(oraSectionTable);
+    CTML::Node oraSectionJS("script");
+    oraSectionJS.SetAttribute("language", "javascript");
     // output the JS
-    ofs << "<script language='javascript'>" << std::endl;
-    ofs << "var seqlen = " << mEvaluatedSeqLen << ";" << std::endl;
-    ofs << "var orp_dist = {" << std::endl;
+    ss.clear();
+    ss << "var seqlen = " << mEvaluatedSeqLen << ";" << std::endl;
+    ss << "var orp_dist = {" << std::endl;
     bool first = true;
     for(auto& e: mOverReqSeqCount){
         std::string seq = e.first;
@@ -529,73 +460,85 @@ void Stats::reportHtmlORA(std::ofstream& ofs, std::string filteringType, std::st
         if(!overRepPassed(seq, count))
             continue;
         if(!first) {
-            ofs << "," << std::endl;
+            ss << "," << std::endl;
         } else
             first = false;
-        ofs << "\t\"" << divName << "_" << seq << "\":[";
+        ss << "\t\"" << divName << "_" << seq << "\":[";
         for(int i=0; i< mEvaluatedSeqLen; ++i){
             if(i !=0 )
-                ofs << ",";
-            ofs << mOverRepSeqDist[seq][i];
+                ss << ",";
+            ss << mOverRepSeqDist[seq][i];
         }
-        ofs << "]";
+        ss << "]";
     }
-        ofs << "\n};" << std::endl;
-
-    ofs << "for (seq in orp_dist) {"<< std::endl;
-    ofs << "    var cvs = document.getElementById(seq);"<< std::endl;
-    ofs << "    var ctx = cvs.getContext('2d'); "<< std::endl;
-    ofs << "    var data = orp_dist[seq];"<< std::endl;
-    ofs << "    var w = 240;"<< std::endl;
-    ofs << "    var h = 20;"<< std::endl;
-    ofs << "    ctx.fillStyle='#cccccc';"<< std::endl;
-    ofs << "    ctx.fillRect(0, 0, w, h);"<< std::endl;
-    ofs << "    ctx.fillStyle='#0000FF';"<< std::endl;
-    ofs << "    var maxVal = 0;"<< std::endl;
-    ofs << "    for(d=0; d<seqlen; d++) {"<< std::endl;
-    ofs << "        if(data[d]>maxVal) maxVal = data[d];"<< std::endl;
-    ofs << "    }"<< std::endl;
-    ofs << "    var step = (seqlen-1) /  (w-1);"<< std::endl;
-    ofs << "    for(x=0; x<w; x++){"<< std::endl;
-    ofs << "        var target = step * x;"<< std::endl;
-    ofs << "        var val = data[Math.floor(target)];"<< std::endl;
-    ofs << "        var y = Math.floor((val / maxVal) * h);"<< std::endl;
-    ofs << "        ctx.fillRect(x,h-1, 1, -y);"<< std::endl;
-    ofs << "    }"<< std::endl;
-    ofs << "}"<< std::endl;
-    ofs << "</script>"<< std::endl;
+    ss << "\n};" << std::endl;
+    ss << "for (seq in orp_dist) {"<< std::endl;
+    ss << "    var cvs = document.getElementById(seq);"<< std::endl;
+    ss << "    var ctx = cvs.getContext('2d'); "<< std::endl;
+    ss << "    var data = orp_dist[seq];"<< std::endl;
+    ss << "    var w = 240;"<< std::endl;
+    ss << "    var h = 20;"<< std::endl;
+    ss << "    ctx.fillStyle='#cccccc';"<< std::endl;
+    ss << "    ctx.fillRect(0, 0, w, h);"<< std::endl;
+    ss << "    ctx.fillStyle='#0000FF';"<< std::endl;
+    ss << "    var maxVal = 0;"<< std::endl;
+    ss << "    for(d=0; d<seqlen; d++) {"<< std::endl;
+    ss << "        if(data[d]>maxVal) maxVal = data[d];"<< std::endl;
+    ss << "    }"<< std::endl;
+    ss << "    var step = (seqlen-1) /  (w-1);"<< std::endl;
+    ss << "    for(x=0; x<w; x++){"<< std::endl;
+    ss << "        var target = step * x;"<< std::endl;
+    ss << "        var val = data[Math.floor(target)];"<< std::endl;
+    ss << "        var y = Math.floor((val / maxVal) * h);"<< std::endl;
+    ss << "        ctx.fillRect(x,h-1, 1, -y);"<< std::endl;
+    ss << "    }"<< std::endl;
+    ss << "}"<< std::endl;
+    ss << "</script>"<< std::endl;
+    oraSectionJS.AppendText(ss.str());
+    oraSectionID.AppendChild(oraSectionJS);
+    oraSection.AppendChild(oraSectionID);
+    return oraSection;
 }
 
-void Stats::reportHtmlKmer(std::ofstream& ofs, std::string filteringType, std::string readName) {
+CTML::Node Stats::reportHtmlKmer(std::string filteringType, std::string readName) {
     // KMER
     std::string subsection = filteringType + ": " + readName + ": KMER counting";
     std::string divName = util::replace(subsection, " ", "_");
     divName = util::replace(divName, ":", "_");
-    std::string title = "";
-
-    ofs << "<div class='subsection_title'><a title='click to hide/show' onclick=showOrHide('" << divName << "')>" + subsection + "</a></div>\n";
-    ofs << "<div  id='" << divName << "'>\n";
-    ofs << "<div class='sub_section_tips'>Darker background means larger counts. The count will be shown on mouse over.</div>\n";
-    ofs << "<table class='kmer_table' style='width:680px;'>\n";
-    ofs << "<tr>";
-    ofs << "<td></td>";
+    
+    CTML::Node kmerSection("div.section_div");
+    CTML::Node kmerSectionTitle("div.subsection_title");
+    CTML::Node kmerSectionTitleLink("a", subsection);
+    kmerSectionTitleLink.SetAttribute("title", "click to hide/show' onclick=showOrHide('" + divName + "')");
+    kmerSectionTitle.AppendChild(kmerSectionTitleLink);
+    kmerSection.AppendChild(kmerSectionTitle);
+    CTML::Node kmerSectionID("div#" + divName);
+    kmerSectionID.AppendChild(CTML::Node("div.sub_section_tips", "Darker background means larger counts. The count will be shown on mouse over"));
+    CTML::Node kmerSectionTable("table.kmer_table");
+    kmerSectionTable.SetAttribute("style", "width:680px;");
+    CTML::Node kmerSectionTableHeader("tr");
     // the heading row
+    std::stringstream ss;
     for(int h = 0; h < (1 << mKmerLen); ++h){
-        ofs << "<td style='color:#333333'>" << std::to_string(h + 1) << "</td>";
+        ss << "<td style='color:#333333'>" << std::to_string(h + 1) << "</td>";
     }
-    ofs << "</tr>\n";
+    kmerSectionTableHeader.AppendText(ss.str());
+    kmerSectionTable.AppendChild(kmerSectionTableHeader);
     // content
     size_t n = 0;
     for(size_t i = 0; i < (1 << mKmerLen); ++i){
-        ofs << "<tr>";
-        ofs << "<td style='color:#333333'>" << std::to_string(i + 1) << "</td>";
+        CTML::Node kmerSectionTableRow("tr");
+        ss.clear();
+        ss << "<td style='color:#333333'>" << std::to_string(i + 1) << "</td>";
         for(int j = 0; j < (1 << mKmerLen); ++j){
-            ofs << makeKmerTD(n++);
+            ss << makeKmerTD(n++);
         }
-        ofs << "</tr>\n";
+        kmerSectionTableRow.AppendText(ss.str());
+        kmerSectionTable.AppendChild(kmerSectionTableRow);
     }
-    ofs << "</table>\n";
-    ofs << "</div>\n";
+    kmerSectionID.AppendChild(kmerSectionTable);
+    kmerSection.AppendChild(kmerSectionID);
+    return kmerSection;
 }
 
 std::string Stats::makeKmerTD(size_t n){
@@ -632,24 +575,15 @@ std::string Stats::makeKmerTD(size_t n){
     return ss.str();
 }
 
-void Stats::reportHtmlQuality(std::ofstream& ofs, std::string filteringType, std::string readName) {
+CTML::Node Stats::reportHtmlQuality(std::string filteringType, std::string readName) {
     // quality
     std::string subsection = filteringType + ": " + readName + ": quality";
     std::string divName = util::replace(subsection, " ", "_");
     divName = util::replace(divName, ":", "_");
     std::string title = "";
-    ofs << "<script type=\"text/javascript\" src=\"./plotly.js\"></script>\n";
-    ofs << "<div class='subsection_title'><a title='click to hide/show' onclick=showOrHide('" << divName << "')>" + subsection + "</a></div>\n";
-    ofs << "<div id='" + divName + "'>\n";
-    ofs << "<div class='sub_section_tips'>Value of each position will be shown on mouse over.</div>\n";
-    ofs << "<div class='figure' id='plot_" + divName + "'></div>\n";
-    ofs << "</div>\n";
-
     std::string alphabets[5] = {"A", "T", "C", "G", "mean"};
     std::string colors[5] = {"rgba(128,128,0,1.0)", "rgba(128,0,128,1.0)", "rgba(0,255,0,1.0)", "rgba(0,0,255,1.0)", "rgba(20,20,20,1.0)"};
-    ofs << "\n<script type=\"text/javascript\">" << std::endl;
     std::string json_str = "var data=[";
-
     int *x = new int[mCycles];
     int total = 0;
     if(!isLongRead()) {
@@ -703,32 +637,47 @@ void Stats::reportHtmlQuality(std::ofstream& ofs, std::string filteringType, std
     json_str += "yaxis:{title:'quality', tickmode: 'auto', nticks: '20'";
     json_str += "}};\n";
     json_str += "Plotly.newPlot('plot_" + divName + "', data, layout);\n";
-
-    ofs << json_str;
-    ofs << "</script>" << std::endl;
-
     delete[] x;
+    
+    CTML::Node qualSection("div.section_div");
+    CTML::Node qualSectionTitle("div.subsection_title");
+    CTML::Node qualSectionTitleLink("a", subsection);
+    qualSectionTitleLink.SetAttribute("title", "click to hide/show' onclick=showOrHide('" + divName + "')");
+    qualSectionTitle.AppendChild(qualSectionTitleLink);
+    CTML::Node qualSectionID("div#" + divName);
+    qualSectionID.AppendChild(CTML::Node("div.sub_section_tips", "Value of each position will be shown on mouse over"));
+    qualSectionID.AppendChild(CTML::Node("div.figure#plot_" + divName));
+    qualSection.AppendChild(qualSectionID);
+    CTML::Node qualJSC("script");
+    qualJSC.SetAttribute("type", "text/javascript");
+    qualJSC.AppendText(json_str);
+    qualSection.AppendChild(qualJSC);
+    return qualSection;
 }
 
-void Stats::reportHtmlContents(std::ofstream& ofs, std::string filteringType, std::string readName) {
-
+CTML::Node Stats::reportHtmlContents(std::string filteringType, std::string readName) {
     // content
     std::string subsection = filteringType + ": " + readName + ": base contents";
     std::string divName = util::replace(subsection, " ", "_");
     divName = util::replace(divName, ":", "_");
     std::string title = "";
 
-    ofs << "<div class='subsection_title'><a title='click to hide/show' onclick=showOrHide('" << divName << "')>" + subsection + "</a></div>\n";
-    ofs << "<div id='" + divName + "'>\n";
-    ofs << "<div class='sub_section_tips'>Value of each position will be shown on mouse over.</div>\n";
-    ofs << "<div class='figure' id='plot_" + divName + "'></div>\n";
-    ofs << "</div>\n";
+    CTML::Node contentSection("div.section_div");
+    CTML::Node contentSectionTitle("div.subsection_title");
+    CTML::Node contentSectionTitleClick("a", subsection);
+    contentSectionTitleClick.SetAttribute("title", "click to hide/show' onclick=showOrHide('" + divName + "')");
+    contentSectionTitle.AppendChild(contentSectionTitleClick);
+    contentSection.AppendChild(contentSectionTitle);
+    CTML::Node contentSectionID("div#" + divName);
+    contentSectionID.AppendChild(CTML::Node("div.sub_section_tips", "Value of each position will be shown on mouse over"));
+    contentSectionID.AppendChild(CTML::Node("div.figure#plot_" + divName));
+    contentSection.AppendChild(contentSectionID);
+    CTML::Node contentSectionJS("script");
+    contentSectionJS.SetAttribute("type", "text/javascript");
 
     std::string alphabets[6] = {"A", "T", "C", "G", "N", "GC"};
     std::string colors[6] = {"rgba(128,128,0,1.0)", "rgba(128,0,128,1.0)", "rgba(0,255,0,1.0)", "rgba(0,0,255,1.0)", "rgba(255, 0, 0, 1.0)", "rgba(20,20,20,1.0)"};
-    ofs << "\n<script type=\"text/javascript\">" << std::endl;
     std::string json_str = "var data=[";
-
     int *x = new int[mCycles];
     int total = 0;
     if(!isLongRead()) {
@@ -794,11 +743,10 @@ void Stats::reportHtmlContents(std::ofstream& ofs, std::string filteringType, st
     json_str += ", tickmode: 'auto', nticks: '20', range: ['0.0', '1.0']";
     json_str += "}};\n";
     json_str += "Plotly.newPlot('plot_" + divName + "', data, layout);\n";
-
-    ofs << json_str;
-    ofs << "</script>" << std::endl;
-
     delete[] x;
+    contentSectionJS.AppendText(json_str);
+    contentSection.AppendChild(contentSectionJS);
+    return contentSection;
 }
 
 Stats* Stats::merge(std::vector<Stats*>& list){

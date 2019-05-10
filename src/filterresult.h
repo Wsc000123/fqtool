@@ -9,6 +9,7 @@
 #include <fstream>
 #include <map>
 #include <json.hpp>
+#include <ctml.hpp>
 #include "common.h"
 #include "options.h"
 #include "stats.h"
@@ -99,11 +100,11 @@ class FilterResult{
         void reportJsonBasic(jsn::json& j);
 
         /** Report basic filter results to html file
-         * @param ofs output file stream
          * @param totalReads total reads of fastq
          * @param totalBases total bases of fastq
+         * @return basic information table
          */
-        void reportHtmlBasic(std::ofstream& ofs, size_t totalReads, size_t totalBases);
+        CTML::Node reportHtmlBasic(size_t totalReads, size_t totalBases);
 
         /** Report detailed trimmed adapter sequence and counts in json fomat
          * @param j reference of json object
@@ -117,17 +118,17 @@ class FilterResult{
         void reportAdaptersJsonSummary(jsn::json& j);
         
         /** Report detailed trimmed adapter sequence and counts in html format
-         * @param ofs output file stream
          * @param adapterCounts adapter sequence counts map
          * @param totalBases totalBases total bases of fastq
+         * @return a table Node of adapter count details
          */
-        void reportAdaptersHtmlDetails(std::ofstream& ofs, std::map<std::string, size_t>& adapterCounts, size_t totalBases);
+        CTML::Node reportAdaptersHtmlDetails(std::map<std::string, size_t>& adapterCounts, size_t totalBases);
 
         /** Report summary trimmed adapter sequence and counts in html format
-         * @param ofs output file stream
          * @param totalBases totalBases total bases of fastq
+         * @param return adapters summary table
          */
-        void reportAdaptersHtmlSummary(std::ofstream& ofs, size_t totalBases);
+        CTML::Node reportAdaptersHtmlSummary(size_t totalBases);
 
         /** get correction matrix(1x64 array)
          * @return pointer to mCorrectionMatrix

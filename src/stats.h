@@ -9,6 +9,7 @@
 #include <string>
 #include <cstdlib>
 #include <sstream>
+#include <ctml.hpp>
 #include "read.h"
 #include "util.h"
 #include "options.h"
@@ -155,47 +156,41 @@ class Stats{
          * summarize will only run if (mSummarized is false) || (mSummarized is true && force = false)
          */
         void summarize(bool forced = false);
-
-        /** Generate json report
-         * @param ofs std::ofstream to output report
-         * @param padding padding in front of each line
-         */
-        void reportJson(std::ofstream& ofs, std::string padding);
         
         /** Generate Html report
-         * @param ofs std::ofstream to output report
          * @param filteringType filtering type of report
          * @param readName library name 
+         * @return a vector of nodes
          */
-        void reportHtml(std::ofstream& ofs, std::string filteringType, std::string readName);
+        std::vector<CTML::Node> reportHtml(std::string filteringType, std::string readName);
 
         /** Generate Quality part of the Html report
-         * @param ofs std::ofstream to output report
          * @param filteringType filtering type of report
          * @param readName library name 
+         * @return quality node
          */
-        void reportHtmlQuality(std::ofstream& ofs, std::string filteringType, std::string readName);
+        CTML::Node reportHtmlQuality(std::string filteringType, std::string readName);
         
         /** Generate Content part of the Html report
-         * @param ofs std::ofstream to output report
          * @param filteringType filtering type of report
-         * @param readName library name 
+         * @param readName library name
+         * @return contents node 
          */
-        void reportHtmlContents(std::ofstream& ofs, std::string filteringType, std::string readName);
+        CTML::Node reportHtmlContents(std::string filteringType, std::string readName);
         
         /** Generate Kmer part of the Html report
-         * @param ofs std::ofstream to output report
          * @param filteringType filtering type of report
          * @param readName library name 
+         * @return kmer node
          */
-        void reportHtmlKmer(std::ofstream& ofs, std::string filteringType, std::string readName);
+        CTML::Node reportHtmlKmer(std::string filteringType, std::string readName);
          
         /** Generate Over representation analysis  part of the Html report
-         * @param ofs std::ofstream to output report
          * @param filteringType filtering type of report
          * @param readName library name 
+         * @return ora node
          */
-        void reportHtmlORA(std::ofstream& ofs, std::string filteringType, std::string readName);
+        CTML::Node reportHtmlORA(std::string filteringType, std::string readName);
         
         /** whether is long read fq
          * @return true if cycles > 300

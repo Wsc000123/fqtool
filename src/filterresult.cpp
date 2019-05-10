@@ -220,25 +220,25 @@ void FilterResult::reportJsonBasic(jsn::json& j){
     }
 }
 
-void FilterResult::reportHtmlBasic(std::ofstream& ofs, size_t totalReads, size_t totalBases){
-    ofs << "<table class='summary_table'>\n";
-    htmlutil::outputTableRow(ofs, "reads passed filters:", htmlutil::formatNumber(mFilterReadStats[COMMONCONST::PASS_FILTER]) + " (" + std::to_string(mFilterReadStats[COMMONCONST::PASS_FILTER] * 100.0 / totalBases) + "%)");
-    htmlutil::outputTableRow(ofs, "low_quality_reads", htmlutil::formatNumber(mFilterReadStats[COMMONCONST::FAIL_QUALITY]) + " (" + std::to_string(mFilterReadStats[COMMONCONST::FAIL_QUALITY] * 100.0 / totalBases) + "%)");
-    htmlutil::outputTableRow(ofs, "too_many_N_reads", htmlutil::formatNumber(mFilterReadStats[COMMONCONST::FAIL_N_BASE]) + " (" + std::to_string(mFilterReadStats[COMMONCONST::FAIL_N_BASE] * 100.0 / totalBases) + "%)");
+CTML::Node FilterResult::reportHtmlBasic(size_t totalReads, size_t totalBases){
+    CTML::Node table("table.summary_table");
+    table.AppendChild(htmlutil::make2ColRowNode("Reads Passed Filters", std::to_string(mFilterReadStats[COMMONCONST::PASS_FILTER]) + "(" + std::to_string(mFilterReadStats[COMMONCONST::PASS_FILTER] * 100.0 / totalBases) + "%)")); 
+    table.AppendChild(htmlutil::make2ColRowNode("Low Quality Reads", std::to_string(mFilterReadStats[COMMONCONST::PASS_FILTER]) + "(" + std::to_string(mFilterReadStats[COMMONCONST::PASS_FILTER] * 100.0 /totalBases)));
+    table.AppendChild(htmlutil::make2ColRowNode("Too Many N Reads", std::to_string(mFilterReadStats[COMMONCONST::FAIL_N_BASE]) + "(" + std::to_string(mFilterReadStats[COMMONCONST::FAIL_N_BASE] * 100.0 / totalBases) + "%)"));
     if(mOptions->correction.enabled){
-        htmlutil::outputTableRow(ofs, "corrected_reads", htmlutil::formatNumber(mCorrectedReads) + " (" + std::to_string(mCorrectedReads * 100.0 / totalReads) + "%)");
-        htmlutil::outputTableRow(ofs, "corrected_bases", htmlutil::formatNumber(getTotalCorrectedBases()) + " (" + std::to_string(getTotalCorrectedBases()) + " (" + std::to_string(getTotalCorrectedBases() * 100.0 / totalBases) + "%)");
+        table.AppendChild(htmlutil::make2ColRowNode("Corrected Reads", std::to_string(mCorrectedReads) + "(" + std::to_string(mCorrectedReads * 100.0 / totalReads) + "%)"));
+        table.AppendChild(htmlutil::make2ColRowNode("Corrected Bases", std::to_string(getTotalCorrectedBases()) + "(" + std::to_string(getTotalCorrectedBases() * 100.0 / totalBases)  + "%)"));
     }
     if(mOptions->complexityFilter.enabled){
-        htmlutil::outputTableRow(ofs, "low_complexity_reads", htmlutil::formatNumber(mFilterReadStats[COMMONCONST::FAIL_COMPLEXITY]) + " (" + std::to_string(mFilterReadStats[COMMONCONST::FAIL_COMPLEXITY] * 100.0 / totalReads) + "%)");
+        table.AppendChild(htmlutil::make2ColRowNode("Low Complexity Reads", std::to_string(mFilterReadStats[COMMONCONST::FAIL_COMPLEXITY]) + "(" + std::to_string(mFilterReadStats[COMMONCONST::FAIL_COMPLEXITY] * 100.0 / totalReads) + "%)"));
     }
     if(mOptions->lengthFilter.enabled){
-        htmlutil::outputTableRow(ofs, "too_short_reads", htmlutil::formatNumber(mFilterReadStats[COMMONCONST::FAIL_LENGTH]) + " (" + std::to_string(mFilterReadStats[COMMONCONST::FAIL_LENGTH] * 100.0 / totalReads) + "%)");
+        table.AppendChild(htmlutil::make2ColRowNode("Too Short Reads", std::to_string(mFilterReadStats[COMMONCONST::FAIL_LENGTH]) + "(" + std::to_string(mFilterReadStats[COMMONCONST::FAIL_LENGTH] * 100.0 / totalReads) + "%)"));
         if(mOptions->lengthFilter.maxReadLength > 0){
-            htmlutil::outputTableRow(ofs, "too_long_reads", htmlutil::formatNumber(mFilterReadStats[COMMONCONST::FAIL_TOO_LONG]) + " (" + std::to_string(mFilterReadStats[COMMONCONST::FAIL_TOO_LONG] * 100.0 /totalReads) + "%)");
+            table.AppendChild(htmlutil::make2ColRowNode("Too Long Reads", std::to_string(mFilterReadStats[COMMONCONST::FAIL_TOO_LONG]) + "(" + std::to_string(mFilterReadStats[COMMONCONST::FAIL_TOO_LONG] * 100.0 /totalReads) + "%)"));
         }
     }
-    ofs << "</table>\n";
+    return table;
 }
 
 void FilterResult::reportAdaptersJsonDetails(jsn::json& j, std::map<std::string, size_t>& adapterCounts){
@@ -264,7 +264,15 @@ void FilterResult::reportAdaptersJsonDetails(jsn::json& j, std::map<std::string,
     }
 }
 
-void FilterResult::reportAdaptersHtmlDetails(std::ofstream& ofs, std::map<std::string, size_t>& adapterCounts, size_t totalBases){
+CTML::Node FilterResult::reportAdaptersHtmlDetails(std::map<std::string, size_t>& adapterCounts, size_t totalBases){
+    CTML::Node table("table.summary_table");
+    CTML::Node tableHeadRow("tr");
+    CTML::Node tableHeadCol1("td.col1", "Sequence");
+    tableHeadCol1.SetAttribute("style", "'font-size:14px;color:#ffffff;background:#556699'");
+    CTML::Node tableHeadCol2("td.col2", "Occurences");
+    tableHeadCol2.SetAttribute("style", "'font-size:14px;color:#ffffff;background:#556699'");
+    tableHeadRow.AppendChild(tableHeadCol1).AppendChild(tableHeadCol2);
+    table.AppendChild(tableHeadRow);
     size_t totalAdapters = 0;
     size_t totalAdaptersBases = 0;
     for(auto& e: adapterCounts){
@@ -275,22 +283,16 @@ void FilterResult::reportAdaptersHtmlDetails(std::ofstream& ofs, std::map<std::s
     if(mPaired){
         frac *= 2.0;
     }
-    if(frac < 0.01){
-        ofs << "<div class='sub_section_tips'>The input has little adapter percentage (~" << std::to_string(frac * 100.0) << "%), probably it's trimmed before.</div>\n";
-    }
     if(totalAdapters == 0){
-        return;
+        return table;
     }
-
-    ofs << "<table class='summary_table'>\n";
-    ofs << "<tr><td class='adapter_col' style='font-size:14px;color:#ffffff;background:#556699'>" << "Sequence" << "</td><td class='col2' style='font-size:14px;color:#ffffff;background:#556699'>" << "Occurrences" << "</td    ></tr>\n";    
     const double dTotalAdapters = (double)totalAdapters;
     size_t reported = 0;
     for(auto& e: adapterCounts){
         if(e.second / dTotalAdapters < mOptions->adapter.reportThreshold){
             continue;
         }
-        htmlutil::outputTableRow(ofs, e.first, e.second);
+        table.AppendChild(htmlutil::make2ColRowNode(e.first, e.second));
         reported += e.second;
     }
     size_t unreported = totalAdapters - reported;
@@ -299,9 +301,9 @@ void FilterResult::reportAdaptersHtmlDetails(std::ofstream& ofs, std::map<std::s
         if(reported == 0){
             tag = "all adapter sequences";
         }
-        htmlutil::outputTableRow(ofs, tag, unreported);
+        table.AppendChild(htmlutil::make2ColRowNode(tag, unreported));
     }
-    ofs << "</table>\n";
+    return table;
 }
 
 void FilterResult::reportAdaptersJsonSummary(jsn::json& j){
@@ -321,17 +323,34 @@ void FilterResult::reportAdaptersJsonSummary(jsn::json& j){
     }
 }
 
-void FilterResult::reportAdaptersHtmlSummary(std::ofstream& ofs, size_t totalBases){
-    ofs << "<div class='subsection_title' onclick=showOrHide('read1_adapters')>Adapter or bad ligation of read1</div>\n";
-    ofs << "<div id='read1_adapters'>\n";
-    reportAdaptersHtmlDetails(ofs, mAdapter1Count, totalBases);
-    ofs << "</div>\n";
+CTML::Node FilterResult::reportAdaptersHtmlSummary(size_t totalBases){
+    // adapters
+    CTML::Node adapterSection("div.section_div");
+    CTML::Node adapterSectionTitle("div.section_title", "Adapters");
+    adapterSectionTitle.SetAttribute("onclick", "showOrHide('adapters')");
+    CTML::Node adapterSectionTitleLink("a");
+    adapterSectionTitleLink.SetAttribute("name", "summary");
+    adapterSectionTitle.AppendChild(adapterSectionTitleLink);
+    adapterSection.AppendChild(adapterSectionTitle);
+    CTML::Node adaptersID("div#adapters");
+    // adapters->read1
+    CTML::Node adapter1Section("div.subsection_title", "Adapter or bad ligation of read1");
+    adapter1Section.SetAttribute("onclick", "showOrHide('read1_adapters')");
+    CTML::Node adapter1ID("div#read1_adapters");
+    adapter1ID.AppendChild(reportAdaptersHtmlDetails(mAdapter1Count, totalBases));
+    adapter1Section.AppendChild(adapter1ID);
+    adaptersID.AppendChild(adapter1Section);
+    // adapters->raed2
     if(mPaired){
-        ofs << "<div class='subsection_title' onclick=showOrHide('read2_adapters')>Adapter or bad ligation of read2</div>\n";
-        ofs << "<div id='read2_adapters'>\n";
-        reportAdaptersHtmlDetails(ofs, mAdapter2Count, totalBases);
-        ofs << "</div>\n";
+        CTML::Node adapter2Section("div.subsection_title", "Adapter or bad ligation of read2");
+        adapter2Section.SetAttribute("onclick", "showOrHide('read2_adapters')");
+        CTML::Node adapter2ID("div#read2_adapters");
+        adapter2ID.AppendChild(reportAdaptersHtmlDetails(mAdapter2Count, totalBases));
+        adapter2Section.AppendChild(adapter2ID);
+        adaptersID.AppendChild(adapter2Section);
     }
+    adapterSection.AppendChild(adaptersID);
+    return adapterSection;
 }
 
 void FilterResult::reportPolyXTrimJson(jsn::json& j){

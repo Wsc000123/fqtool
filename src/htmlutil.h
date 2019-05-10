@@ -5,6 +5,7 @@
 #include <fstream>
 #include <sstream>
 #include <string>
+#include <ctml.hpp>
 
 /** some useful utilities for html output */
 namespace htmlutil{
@@ -14,10 +15,14 @@ namespace htmlutil{
      * @param val second field of a row
      */
     template<typename T>
-    inline void outputTableRow(std::ofstream& ofs, const std::string& key, T val){
+    inline CTML::Node make2ColRowNode(const std::string& key, T val){
         std::stringstream ss;
         ss << val;
-        ofs << "<tr><td class='col1'>" + key + "</td><td class='col2'>" + ss.str() + "</td></tr>\n";
+        CTML::Node row("tr");
+        CTML::Node col1("td.col1", key);
+        CTML::Node col2("td.col2", ss.str());
+        row.AppendChild(col1).AppendChild(col2);
+        return row;
     }
 
     /** format a big number with KMGTP units
@@ -59,18 +64,6 @@ namespace htmlutil{
                 (int)ptm->tm_year + 1900,(int)ptm->tm_mon + 1,(int)ptm->tm_mday,
                 (int)ptm->tm_hour,(int)ptm->tm_min,(int)ptm->tm_sec);
         return std::string(date);
-    }
-
-    /** print footer of HTML 
-     * @param ofs reference of std::ofstream
-     * @param comment comment string
-     */
-    inline void printFooter(std::ofstream& ofs, const std::string& comment){
-        ofs << "\n</div>" << std::endl;
-        ofs << "<div id='footer'> ";
-        ofs << comment << std::endl;
-        ofs << " @ " << getCurrentSystemTime() << " </div>";
-        ofs << "</body></html>";
     }
 }
 

@@ -22,35 +22,60 @@ void HtmlReporter::setInsertHist(long* insertHist, int insertSizePeak){
 
 void HtmlReporter::report(FilterResult* result, Stats* preStats1, Stats* postStats1, Stats* preStats2, Stats* postStats2) {
     std::ofstream ofs(mOptions->htmlFile);
-    printHeader(ofs, "Fastq Preprocess Report");
-    printSummary(ofs, result, preStats1, postStats1, preStats2, postStats2);
-    ofs << "<div class='section_div'>\n";
-    ofs << "<div class='section_title' onclick=showOrHide('before_filtering')><a name='summary'>Before filtering</a></div>\n";
-    ofs << "<div id='before_filtering'>\n";
+    CTML::Document hReport;
+    printHeader(hReport, "Fastq Preprocess Report");
+    printSummary(hReport, result, preStats1, postStats1, preStats2, postStats2);
+    CTML::Node preSection("div.section_div");
+    CTML::Node preSectionTitle("div.section_title");
+    preSectionTitle.SetAttribute("onclick", "showOrHide('before_filtering')");
+    CTML::Node preSectionTitleLink("a", "Before filtering");
+    preSectionTitleLink.SetAttribute("name", "summary");
+    preSectionTitle.AppendChild(preSectionTitleLink);
+    preSection.AppendChild(preSectionTitle);
+    CTML::Node preSectionID("div#before_filtering");
     if(preStats1){
-        preStats1->reportHtml(ofs, "Before filtering", "read1");
+        std::vector<CTML::Node> v1 = preStats1->reportHtml("Before filtering", "read1");
+        for(uint32_t i = 0; i < v1.size(); ++i){
+            preSectionID.AppendChild(v1[i]);
+        }
     }
     if(preStats2){
-        preStats2->reportHtml(ofs, "Before filtering", "read2");
+        std::vector<CTML::Node> v2 = preStats2->reportHtml("Before filtering", "read2");
+        for(uint32_t i = 0; i < v2.size(); ++i){
+            preSectionID.AppendChild(v2[i]);
+        }
     }
-    ofs << "</div>\n";
-    ofs << "</div>\n";
-    ofs << "<div class='section_div'>\n";
-    ofs << "<div class='section_title' onclick=showOrHide('after_filtering')><a name='summary'>After filtering</a></div>\n";
-    ofs << "<div id='after_filtering'>\n";
+    preSection.AppendChild(preSectionID);
+    hReport.AppendNodeToBody(preSection);
+   
+    CTML::Node postSection("div.section_div");
+    CTML::Node postSectionTitle("div.section_title");
+    postSectionTitle.SetAttribute("onclick", "showOrHide('after_filtering')");
+    CTML::Node postSectionTitleLink("a", "After filtering");
+    postSectionTitleLink.SetAttribute("name", "summary");
+    postSectionTitle.AppendChild(postSectionTitleLink);
+    postSection.AppendChild(postSectionTitle);
+    CTML::Node postSectionID("div#after_filtering");
     if(postStats1){
-        postStats1->reportHtml(ofs, "After filtering", "read1");
+        std::vector<CTML::Node> v1 = postStats1->reportHtml("After filtering", "read1");
+        for(uint32_t i = 0; i < v1.size(); ++i){
+            postSectionID.AppendChild(v1[i]);
+        }
     }
     if(postStats2){
-        postStats2->reportHtml(ofs, "After filtering", "read2");
+        std::vector<CTML::Node> v2 = postStats2->reportHtml("After filtering", "read2");
+        for(uint32_t i = 0; i < v2.size(); ++i){
+            postSectionID.AppendChild(v2[i]);
+        }
     }
-    ofs << "</div>\n";
-    ofs << "</div>\n";
-    htmlutil::printFooter(ofs, "Finish Report");
+    postSection.AppendChild(postSectionID);
+    hReport.AppendNodeToBody(postSection);
+    CTML::Node footer("div#footer", "Fqtool Report @ " + htmlutil::getCurrentSystemTime());
+    ofs << hReport.ToString(CTML::StringFormatting::MULTIPLE_LINES);
+    ofs.close();
 }
 
-void HtmlReporter::printSummary(std::ofstream& ofs, FilterResult* fresult, Stats* preStats1, Stats* postStats1, Stats* preStats2, Stats* postStats2){
-    ofs << "{" << std::endl;
+void HtmlReporter::printSummary(CTML::Document& d, FilterResult* fresult, Stats* preStats1, Stats* postStats1, Stats* preStats2, Stats* postStats2){
     long preTotalReads = preStats1->getReads();
     long preTotalBases = preStats1->getBases();
     long preQ20Bases = preStats1->getQ20();
@@ -94,89 +119,78 @@ void HtmlReporter::printSummary(std::ofstream& ofs, FilterResult* fresult, Stats
     }else{
         sequencingInfo += " (" + std::to_string(preStats1->getCycles()) + " cycles)";
     }
-    ofs << std::endl;
-    ofs << "<h1 style='text-align:left;'><style='color:#663355;text-decoration:none;'>" + mOptions->reportTitle + "</a>" << std::endl;
-    ofs << "<div class='section_div'>\n";
-    ofs << "<div class='section_title' onclick=showOrHide('summary')><a name='summary'>Summary</a></div>\n";
-    ofs << "<div id='summary'>\n";
-    ofs << "<div class='subsection_title' onclick=showOrHide('general')>General</div>\n";
-    ofs << "<div id='general'>\n";
-    ofs << "<table class='summary_table'>\n";
-    htmlutil::outputTableRow(ofs, "sequencing:", sequencingInfo);
-
-    ofs << "<div class='subsection_title' onclick=showOrHide('before_filtering_summary')>Before filtering</div>\n";
-    ofs << "<div id='before_filtering_summary'>\n";
-    ofs << "<table class='summary_table'>" << std::endl;;
-
-    htmlutil::outputTableRow(ofs, "total_reads", preTotalReads);
-    htmlutil::outputTableRow(ofs, "total_bases", preTotalBases);
-    htmlutil::outputTableRow(ofs, "Q20_bases", preQ20Bases);
-    htmlutil::outputTableRow(ofs, "Q30_bases", preQ30Bases);
-    htmlutil::outputTableRow(ofs, "Q20_rate", preQ20Rate);
-    htmlutil::outputTableRow(ofs, "Q30_rate", preQ30Rate);
-    htmlutil::outputTableRow(ofs, "read1_mean_length", preRead1Length);
+    // h1 title node
+    CTML::Node h1("h1");
+    h1.SetAttribute("style", "text-align:left");
+    CTML::Node h1Link("a");
+    h1Link.SetAttribute("style", "color:#663355;text-decoration:none;").AppendText(mOptions->reportTitle);
+    h1.AppendChild(h1Link);
+    d.AppendNodeToHead(h1);
+    // summary section
+    CTML::Node summarySection("div.section_div");
+    CTML::Node summaryTitle("div.section_title");
+    summaryTitle.SetAttribute("onclick", "showOrHide('summary')");
+    CTML::Node summaryTitleLink("a", "Summary");
+    summaryTitleLink.SetAttribute("name", "summary");
+    summaryTitle.AppendChild(summaryTitleLink);
+    summarySection.AppendChild(summaryTitle);
+    CTML::Node summaryID("div#summary");
+    // summary->preFilter
+    CTML::Node preFilterSection("div.subsection_title", "Before Filtering");
+    preFilterSection.SetAttribute("onclick", "showOrHide('before_filtering_summary')");
+    CTML::Node preFilterID("div#before_filtering_summary");
+    CTML::Node preFilterTable("table.summary_table");
+    preFilterTable.AppendChild(htmlutil::make2ColRowNode("Total Reads", preTotalReads));
+    preFilterTable.AppendChild(htmlutil::make2ColRowNode("Total Bases", preTotalBases));
+    preFilterTable.AppendChild(htmlutil::make2ColRowNode("Q20 Bases", std::to_string(preQ20Bases) + "(" + std::to_string(preQ20Rate) + ")"));
+    preFilterTable.AppendChild(htmlutil::make2ColRowNode("Q30 Bases", std::to_string(preQ30Bases) + "(" + std::to_string(preQ30Rate) + ")"));
+    preFilterTable.AppendChild(htmlutil::make2ColRowNode("GC Content", preGCRate));
+    preFilterTable.AppendChild(htmlutil::make2ColRowNode("Read1 Mean Length", preRead1Length));
     if(mOptions->isPaired()){
-         htmlutil::outputTableRow(ofs, "read2_mean_length", preRead2Length);
+        preFilterTable.AppendChild(htmlutil::make2ColRowNode("Read2 Mean Length", preRead2Length));
     }
-    htmlutil::outputTableRow(ofs, "gc_content", preGCRate);
-    ofs << "</table>\n";
-    ofs << "</div>\n";
-    
-    ofs << "<div class='subsection_title' onclick=showOrHide('after_filtering_summary')>After filtering</div>\n";
-    ofs << "<div id='after_filtering_summary'>\n";
-    ofs << "<table class='summary_table'>\n";
-    htmlutil::outputTableRow(ofs, "total_reads", postTotalReads);
-    htmlutil::outputTableRow(ofs, "total_bases", postTotalBases);
-    htmlutil::outputTableRow(ofs, "Q20_bases", postQ20Bases);
-    htmlutil::outputTableRow(ofs, "Q30_bases", postQ30Bases);
-    htmlutil::outputTableRow(ofs, "Q20_rate", postQ20Rate);
-    htmlutil::outputTableRow(ofs, "Q30_rate", postQ30Rate);
-    htmlutil::outputTableRow(ofs, "read1_mean_length", postRead1Length);
+    preFilterID.AppendChild(preFilterTable);
+    preFilterSection.AppendChild(preFilterID);
+    summaryID.AppendChild(preFilterSection);
+    // summary->afterFilter
+    CTML::Node postFilterSection("div.subsection_title", "After filtering");
+    postFilterSection.SetAttribute("onclick", "showOrHide('after_filtering_summary')");
+    CTML::Node postFilterID("div#after_filtering_summary");
+    CTML::Node postFilterTable("table.summary_table");
+    postFilterTable.AppendChild(htmlutil::make2ColRowNode("Total Reads", postTotalReads));
+    postFilterTable.AppendChild(htmlutil::make2ColRowNode("Total Bases", postTotalBases));
+    postFilterTable.AppendChild(htmlutil::make2ColRowNode("Q20 Bases", std::to_string(postQ20Bases) + "(" + std::to_string(postQ20Rate) + ")"));
+    postFilterTable.AppendChild(htmlutil::make2ColRowNode("Q30 Bases", std::to_string(postQ30Bases) + "(" + std::to_string(postQ30Rate) + ")"));
+    postFilterTable.AppendChild(htmlutil::make2ColRowNode("GC Content", postGCRate));
+    postFilterTable.AppendChild(htmlutil::make2ColRowNode("Read1 Mean Length", postRead1Length));
     if(mOptions->isPaired()){
-         htmlutil::outputTableRow(ofs, "read2_mean_length", postRead2Length);
+        postFilterTable.AppendChild(htmlutil::make2ColRowNode("Read2 Mean Length", postRead2Length));
     }
-    htmlutil::outputTableRow(ofs, "gc_content", postGCRate);
-    ofs << "</table>\n";
-    ofs << "</div>" << std::endl;
-
-    if(fresult){
-        ofs << "<div class='section_div'>\n";
-        ofs << "<div class='subsection_title' onclick=showOrHide('filtering_result')>Filtering result</div>\n";
-        ofs << "<div id='filtering_result'>\n";
-        fresult->reportHtmlBasic(ofs, preTotalReads, preTotalBases);
-        ofs << "</div>\n";
+    postFilterID.AppendChild(postFilterTable);
+    postFilterSection.AppendChild(postFilterID);
+    summaryID.AppendChild(postFilterSection);
+    // summary->filterresult
+    CTML::Node filterResultSection("div.subsection_title", "Filtering Results");
+    filterResultSection.SetAttribute("onclick", "showOrHide('filtering_result')");
+    CTML::Node filterResultID("div#filtering_result");
+    CTML::Node filterTable = fresult->reportHtmlBasic(preTotalBases, preTotalReads);
+    filterResultID.AppendChild(filterTable);
+    filterResultSection.AppendChild(filterResultID);
+    summaryID.AppendChild(filterResultSection);
+    summarySection.AppendChild(summaryID);
+    d.AppendNodeToBody(summarySection);
+    // adapters 
+    if(mOptions->adapter.enableTriming){
+        d.AppendNodeToBody(fresult->reportAdaptersHtmlSummary(preTotalBases));
     }
-
-    ofs << "</div>\n";
-    ofs << "</div>\n";
-
-    if(fresult && mOptions->adapter.enableTriming){
-         ofs << "<div class='section_div'>\n";
-         ofs << "<div class='section_title' onclick=showOrHide('adapters')><a name='summary'>Adapters</a></div>\n";
-         ofs << "<div id='adapters'>\n";
-         fresult->reportAdaptersHtmlSummary(ofs, preTotalBases);
-         ofs << "</div>\n";
-         ofs << "</div>\n";
-    }
-
+    // duplication
     if(mOptions->duplicate.enabled){
-        ofs << "<div class='section_div'>\n";
-        ofs << "<div class='section_title' onclick=showOrHide('duplication')><a name='summary'>Duplication</a></div>\n";
-        ofs << "<div id='duplication'>\n";
-        reportDuplication(ofs);
-        ofs << "</div>\n";
-        ofs << "</div>\n";
+        d.AppendNodeToBody(reportDuplication());
     }
 }
 
-void HtmlReporter::reportDuplication(std::ofstream& ofs){
-    ofs << "<div id='duplication_figure'>\n";
-    ofs << "<div class='figure' id='plot_duplication' style='height:400px;'></div>\n";
-    ofs << "</div>\n";
-
-    ofs << "\n<script type=\"text/javascript\">" << std::endl;
+CTML::Node HtmlReporter::reportDuplication(){
     std::string json_str = "var data=[";
-
     int total = mOptions->duplicate.histSize - 2;
     long *x = new long[total];
     double allCount = 0;
@@ -219,58 +233,80 @@ void HtmlReporter::reportDuplication(std::ofstream& ofs){
     
     json_str += "var layout={title:'duplication rate (" + std::to_string(mDupRate*100.0) + "%)', xaxis:{title:'duplication level'}, yaxis:{title:'Read percent (%) & GC ratio'}};\n";
     json_str += "Plotly.newPlot('plot_duplication', data, layout);\n";
-    ofs << json_str;
-    ofs << "</script>" << std::endl;
     delete[] x;
     delete[] percents;
     delete[] gc;
+
+    CTML::Node dupSection("div.section_div");
+    CTML::Node dupSectionTitle("div.section_title");
+    dupSectionTitle.SetAttribute("onclick", "showOrHide('duplication')");
+    CTML::Node dupSectionLink("a", "Duplication");
+    dupSectionLink.SetAttribute("name", "summary");
+    dupSectionTitle.AppendChild(dupSectionLink);
+    dupSection.AppendChild(dupSectionTitle);
+
+    CTML::Node dupSectionID("div#duplication");
+    CTML::Node dupSectionFigID("div#duplication_figure");
+    CTML::Node dupSectionFig("div.figure");
+    dupSectionFig.SetAttribute("id", "plot_duplication").SetAttribute("style", "height:400px;");
+    dupSectionFigID.AppendChild(dupSectionFig);
+    dupSectionID.AppendChild(dupSectionFigID);
+
+    CTML::Node dupSectionScript("script");
+    dupSectionScript.SetAttribute("type", "text/javascript");
+    dupSectionScript.AppendText(json_str);
+    dupSectionID.AppendChild(dupSectionScript);
+    dupSection.AppendChild(dupSectionID);
+    return dupSection;
 }
 
- void HtmlReporter::printCSS(std::ofstream& ofs){
-    ofs << "<style type=\"text/css\">" << std::endl;
-    ofs << "td {border:1px solid #dddddd;padding:5px;font-size:12px;}" << std::endl;
-    ofs << "table {border:1px solid #999999;padding:2x;border-collapse:collapse; width:800px}" << std::endl;
-    ofs << ".col1 {width:240px; font-weight:bold;}" << std::endl;
-    ofs << ".adapter_col {width:500px; font-size:10px;}" << std::endl;
-    ofs << "img {padding:30px;}" << std::endl;
-    ofs << "#menu {font-family:Consolas, 'Liberation Mono', Menlo, Courier, monospace;}" << std::endl;
-    ofs << "#menu a {color:#0366d6; font-size:18px;font-weight:600;line-height:28px;text-decoration:none;font-family:-apple-system, BlinkMacSystemFont, 'Segoe UI', Helv  etica, Arial, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol'}" << std::endl;
-    ofs << "a:visited {color: #999999}" << std::endl;
-    ofs << ".alignleft {text-align:left;}" << std::endl;
-    ofs << ".alignright {text-align:right;}" << std::endl;
-    ofs << ".figure {width:800px;height:600px;}" << std::endl;
-    ofs << ".header {color:#ffffff;padding:1px;height:20px;background:#000000;}" << std::endl;
-    ofs << ".section_title {color:#ffffff;font-size:20px;padding:5px;text-align:left;background:#663355; margin-top:10px;}" << std::endl;
-    ofs << ".subsection_title {font-size:16px;padding:5px;margin-top:10px;text-align:left;color:#663355}" << std::endl;
-    ofs << "#container {text-align:center;padding:3px 3px 3px 10px;font-family:Arail,'Liberation Mono', Menlo, Courier, monospace;}" << std::endl;
-    ofs << ".menu_item {text-align:left;padding-top:5px;font-size:18px;}" << std::endl;
-    ofs << ".highlight {text-align:left;padding-top:30px;padding-bottom:30px;font-size:20px;line-height:35px;}" << std::endl;
-    ofs << "#helper {text-align:left;border:1px dotted #fafafa;color:#777777;font-size:12px;}" << std::endl;
-    ofs << "#footer {text-align:left;padding:15px;color:#ffffff;font-size:10px;background:#663355;font-family:Arail,'Liberation Mono', Menlo, Courier, monospace;}" << std::endl;
-    ofs << ".kmer_table {text-align:center;font-size:8px;padding:2px;}" << std::endl;
-    ofs << ".kmer_table td{text-align:center;font-size:8px;padding:0px;color:#ffffff}" << std::endl;
-    ofs << ".sub_section_tips {color:#999999;font-size:10px;padding-left:5px;padding-bottom:3px;}" << std::endl;
-    ofs << "</style>" << std::endl;
-}
-
-void HtmlReporter::printHeader(std::ofstream& ofs, const std::string& title){
-    ofs << "<html><head><meta http-equiv=\"content-type\" content=\"text/html;charset=utf-8\" />";
-    ofs << "<title>" << title << " </title>";
-    printJS(ofs);        
-    printCSS(ofs);
-    ofs << "</head>";
-    ofs << "<body><div id='container'>";
-}
-
-void HtmlReporter::printJS(std::ofstream& ofs){
-    ofs << "<script src='https://cdn.plot.ly/plotly-latest.min.js'></script>" << std::endl;
-    ofs << "\n<script type=\"text/javascript\">" << std::endl;
-    ofs << "    function showOrHide(divname) {" << std::endl;
-    ofs << "        div = document.getElementById(divname);" << std::endl;
-    ofs << "        if(div.style.display == 'none')" << std::endl;
-    ofs << "            div.style.display = 'block';" << std::endl;
-    ofs << "        else" << std::endl;
-    ofs << "            div.style.display = 'none';" << std::endl;
-    ofs << "    }" << std::endl;
-    ofs << "</script>" << std::endl;
+void HtmlReporter::printHeader(CTML::Document& d, const std::string& title){
+    // add meta 
+    CTML::Node meta("meta");
+    meta.SetAttribute("http-equiv", "content-type");
+    meta.SetAttribute("content", "text/html;charset=utf-8");
+    meta.UseClosingTag(false);
+    d.AppendNodeToHead(meta);
+    d.AppendNodeToHead(CTML::Node("title", title));
+    // add js
+    CTML::Node jsSrc("script");
+    jsSrc.SetAttribute("src", "https://cdn.plot.ly/plotly-latest.min.js");
+    CTML::Node jsFunc("script");
+    jsFunc.SetAttribute("type","text/javascript");
+    jsFunc.AppendText("function showOrHide(divname) {\n");
+    jsFunc.AppendText("  div = document.getElementById(divname);\n");
+    jsFunc.AppendText("  if(div.style.display == 'none')\n");
+    jsFunc.AppendText("     div.style.display = 'block';\n");
+    jsFunc.AppendText("  else\n");
+    jsFunc.AppendText("     div.style.display = 'none';\n");
+    jsFunc.AppendText("}\n");
+    d.AppendNodeToHead(jsSrc);
+    d.AppendNodeToHead(jsFunc);
+    // add css
+    CTML::Node css("style");
+    css.SetAttribute("type", "text/css");
+    css.AppendText("td {border:1px solid #dddddd;padding:5px;font-size:12px;}\n");
+    css.AppendText("table {border:1px solid #999999;padding:2x;border-collapse:collapse; width:800px}\n");
+    css.AppendText(".col1 {width:240px; font-weight:bold;}\n");
+    css.AppendText(".adapter_col {width:500px; font-size:10px;}\n");
+    css.AppendText("img {padding:30px;}\n");
+    css.AppendText("#menu {font-family:Consolas, 'Liberation Mono', Menlo, Courier, monospace;}\n");
+    css.AppendText("#menu a {color:#0366d6; font-size:18px;font-weight:600;line-height:28px;text-decoration:none;");
+    css.AppendText("font-family:-apple-system, BlinkMacSystemFont, 'Segoe UI', Helv  etica, Arial, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol'}\n");
+    css.AppendText("a:visited {color: #999999}\n");
+    css.AppendText(".alignleft {text-align:left;}\n");
+    css.AppendText(".alignright {text-align:right;}\n");
+    css.AppendText(".figure {width:800px;height:600px;}\n");
+    css.AppendText(".header {color:#ffffff;padding:1px;height:20px;background:#000000;}\n");
+    css.AppendText(".section_title {color:#ffffff;font-size:20px;padding:5px;text-align:left;background:#663355; margin-top:10px;}\n");
+    css.AppendText(".subsection_title {font-size:16px;padding:5px;margin-top:10px;text-align:left;color:#663355}\n");
+    css.AppendText("#container {text-align:center;padding:3px 3px 3px 10px;font-family:Arail,'Liberation Mono', Menlo, Courier, monospace;}\n");
+    css.AppendText(".menu_item {text-align:left;padding-top:5px;font-size:18px;}\n");
+    css.AppendText(".highlight {text-align:left;padding-top:30px;padding-bottom:30px;font-size:20px;line-height:35px;}\n");
+    css.AppendText("#helper {text-align:left;border:1px dotted #fafafa;color:#777777;font-size:12px;}\n");
+    css.AppendText("#footer {text-align:left;padding:15px;color:#ffffff;font-size:10px;background:#663355;font-family:Arail,'Liberation Mono', Menlo, Courier, monospace;}\n");
+    css.AppendText(".kmer_table {text-align:center;font-size:8px;padding:2px;}\n");
+    css.AppendText(".kmer_table td{text-align:center;font-size:8px;padding:0px;color:#ffffff}\n");
+    css.AppendText(".sub_section_tips {color:#999999;font-size:10px;padding-left:5px;padding-bottom:3px;}\n");
+    d.AppendNodeToHead(css);
 }
