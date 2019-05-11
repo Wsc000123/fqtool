@@ -223,7 +223,7 @@ bool SingleEndProcessor::process(){
         failedWriterThread->join();
         util::loginfo("failed reads writer thread finished", mOptions->logmtx);
     }
-    util::loginfo("start to generate reports\n", mOptions->logmtx);
+    util::loginfo("start generating reports", mOptions->logmtx);
     std::vector<Stats*> preStats;
     std::vector<Stats*> postStats;
     std::vector<FilterResult*> filterResults;

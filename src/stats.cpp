@@ -389,6 +389,46 @@ bool Stats::isLongRead(){
     return mCycles > 300;
 }
 
+jsn::json Stats::reportJson(){
+    jsn::json summary;
+    summary["total_reads"] = mReads;
+    summary["total_bases"] = mBases;
+    summary["q20_bases"] = mQ20Total;
+    summary["q30_bases"] = mQ30Total;
+    summary["total_cycles"] = mCycles;
+    jsn::json qualContent;
+    std::string qualNames[5] = {"A", "T", "C", "G", "mean"};
+    for(int i = 0; i < 5; ++i){
+        qualContent[qualNames[i]] = std::vector<double>(mQualityCurves[qualNames[i]], mQualityCurves[qualNames[i]] + mCycles);
+    }
+    summary["quality_curves"] = qualContent;
+    jsn::json baseContent;
+    std::string contentNames[6] = {"A", "T", "C", "G", "N", "GC"};
+    for(int i = 0; i < 6; ++i){
+        baseContent[contentNames[i]] = std::vector<double>(mContentCurves[contentNames[i]], mContentCurves[contentNames[i]] + mCycles);
+    }
+    summary["content_curves"] = baseContent;
+    if(mKmerLen){
+        jsn::json kmer;
+        for(int i = 0; i < mKmerBufLen; ++i){
+            std::string seq = Evaluator::int2seq(i, mKmerLen);
+            kmer[seq] = std::to_string(mKmer[i]);
+        }
+        summary["kmer_count"] = kmer;
+    }
+    if(mOverRepSampling){
+        jsn::json ora;
+        for(auto& e : mOverReqSeqCount){
+            if(!overRepPassed(e.first, e.second)){
+                continue;
+            }
+            ora[e.first] = e.second;
+        }
+        summary["overrepresented_sequences"] = ora;
+    }
+    return summary;
+}
+
 std::vector<CTML::Node> Stats::reportHtml(std::string filteringType, std::string readName){
     std::vector<CTML::Node> r;
     r.push_back(reportHtmlQuality(filteringType, readName));
@@ -412,7 +452,8 @@ CTML::Node Stats::reportHtmlORA(std::string filteringType, std::string readName)
     CTML::Node oraSection("div.section_div");
     CTML::Node oraSectionTitle("div.subsection_title");
     CTML::Node oraSectionTitleLink("a", subSection);
-    oraSectionTitleLink.SetAttribute("title", "click to hide/show' onclick=showOrHide('" + divName + "')");
+    oraSectionTitleLink.SetAttribute("title", "click to hide/show");
+    oraSectionTitleLink.SetAttribute("onclick", "showOrHide('" + divName + "')");
     oraSectionTitle.AppendChild(oraSectionTitleLink);
     oraSection.AppendChild(oraSectionTitle);
     CTML::Node oraSectionID("div#" + divName);
@@ -424,6 +465,7 @@ CTML::Node Stats::reportHtmlORA(std::string filteringType, std::string readName)
     oraSectionTableHeader.AppendChild(CTML::Node("td", "count (% of bases)"));
     oraSectionTableHeader.AppendChild(CTML::Node("td", "distribution: cycle 1 ~ cycle " + std::to_string(mEvaluatedSeqLen)));
     oraSectionTable.AppendChild(oraSectionTableHeader);
+    
     int found = 0;
     for(auto& e: mOverReqSeqCount){
         std::string seq = e.first;
@@ -436,10 +478,12 @@ CTML::Node Stats::reportHtmlORA(std::string filteringType, std::string readName)
         CTML::Node col1("td", seq);
         col1.SetAttribute("width", "400").SetAttribute("style", "word-break:break-all;font-size:8px;");
         CTML::Node col2("td", std::to_string(count) + "(" + std::to_string(percent) + "%)");
+        col2.SetAttribute("width", "200");
         CTML::Node col3("td");
         col3.SetAttribute("width", "250");
-        CTML::Node cavas("cavas#" + divName + "_" + seq);
+        CTML::Node cavas("canvas#" + divName + "_" + seq);
         cavas.UseClosingTag(false).SetAttribute("width", "240").SetAttribute("height", "20");
+        col3.AppendChild(cavas);
         oraSectionTableRow.AppendChild(col1).AppendChild(col2).AppendChild(col3);
         oraSectionTable.AppendChild(oraSectionTableRow);
     }
@@ -521,22 +565,23 @@ CTML::Node Stats::reportHtmlKmer(std::string filteringType, std::string readName
     kmerSectionTable.SetAttribute("style", "width:680px;");
     CTML::Node kmerSectionTableHeader("tr");
     // the heading row
-    std::stringstream ss;
+    kmerSectionTableHeader.AppendChild(CTML::Node("td"));
     for(int h = 0; h < (1 << mKmerLen); ++h){
-        ss << "<td style='color:#333333'>" << std::to_string(h + 1) << "</td>";
+        CTML::Node row("td", std::to_string(h + 1));
+        row.SetAttribute("style", "color:#333333");
+        kmerSectionTableHeader.AppendChild(row);
     }
-    kmerSectionTableHeader.AppendText(ss.str());
     kmerSectionTable.AppendChild(kmerSectionTableHeader);
     // content
     size_t n = 0;
     for(size_t i = 0; i < (1 << mKmerLen); ++i){
         CTML::Node kmerSectionTableRow("tr");
-        ss.clear();
-        ss << "<td style='color:#333333'>" << std::to_string(i + 1) << "</td>";
+        CTML::Node firCol("td", std::to_string(i + 1));
+        firCol.SetAttribute("style", "color:#333333");
+        kmerSectionTableRow.AppendChild(firCol);
         for(int j = 0; j < (1 << mKmerLen); ++j){
-            ss << makeKmerTD(n++);
+            kmerSectionTableRow.AppendChild(makeKmerTD(n++));
         }
-        kmerSectionTableRow.AppendText(ss.str());
         kmerSectionTable.AppendChild(kmerSectionTableRow);
     }
     kmerSectionID.AppendChild(kmerSectionTable);
@@ -544,7 +589,7 @@ CTML::Node Stats::reportHtmlKmer(std::string filteringType, std::string readName
     return kmerSection;
 }
 
-std::string Stats::makeKmerTD(size_t n){
+CTML::Node Stats::makeKmerTD(size_t n){
     std::string seq = Evaluator::int2seq(n, mKmerLen);
     double meanBases = (double)(mBases + 1) / mKmerBufLen;
     double prop = mKmer[n] / meanBases;
@@ -560,7 +605,6 @@ std::string Stats::makeKmerTD(size_t n){
     int g = r;
     int b = r;
     std::stringstream ss;
-    ss << "<td style='background:#";
     if(r<16){
         ss << "0";
     }
@@ -573,9 +617,10 @@ std::string Stats::makeKmerTD(size_t n){
         ss << "0";
     }
     ss << std::hex << b;
-    ss << std::dec << "' title='"<< seq << ": " << mKmer[n] << "\n" << prop << " times as mean value'>";
-    ss << seq << "</td>";
-    return ss.str();
+    CTML::Node row("td", seq);
+    row.SetAttribute("style", "background:#" + ss.str());
+    row.SetAttribute("title", seq + ": " + std::to_string(mKmer[n]) + "\n" + std::to_string(prop) + " times as mean value");
+    return row;
 }
 
 CTML::Node Stats::reportHtmlQuality(std::string filteringType, std::string readName) {
@@ -647,6 +692,7 @@ CTML::Node Stats::reportHtmlQuality(std::string filteringType, std::string readN
     CTML::Node qualSectionTitleLink("a", subsection);
     qualSectionTitleLink.SetAttribute("title", "click to hide/show' onclick=showOrHide('" + divName + "')");
     qualSectionTitle.AppendChild(qualSectionTitleLink);
+    qualSection.AppendChild(qualSectionTitle);
     CTML::Node qualSectionID("div#" + divName);
     qualSectionID.AppendChild(CTML::Node("div.sub_section_tips", "Value of each position will be shown on mouse over"));
     qualSectionID.AppendChild(CTML::Node("div.figure#plot_" + divName));

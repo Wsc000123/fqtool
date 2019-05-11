@@ -10,6 +10,7 @@
 #include <cstdlib>
 #include <sstream>
 #include <ctml.hpp>
+#include <json.hpp>
 #include "read.h"
 #include "util.h"
 #include "options.h"
@@ -156,6 +157,11 @@ class Stats{
          * summarize will only run if (mSummarized is false) || (mSummarized is true && force = false)
          */
         void summarize(bool forced = false);
+
+        /** generate json report
+         * @return a json object
+         */
+        jsn::json reportJson();
         
         /** Generate Html report
          * @param filteringType filtering type of report
@@ -260,9 +266,9 @@ class Stats{
        
         /** make html popup value of kmer table
          * @param n the integer representation of kmer
-         * @return popup value of kmer table
+         * @return node of kmer table field
          */
-        std::string makeKmerTD(size_t n);
+        CTML::Node makeKmerTD(size_t n);
         
         /** delete OverRepDist recources */ 
         void deleteOverRepSeqDist();

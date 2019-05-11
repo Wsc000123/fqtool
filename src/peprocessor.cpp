@@ -176,7 +176,7 @@ bool PairEndProcessor::process(){
             util::loginfo("failed reads writer thread finished", mOptions->logmtx);
         }
     }
-    util::loginfo("start to generate reports\n", mOptions->logmtx);
+    util::loginfo("start generating reports", mOptions->logmtx);
     std::vector<Stats*> preStats1;
     std::vector<Stats*> preStats2;
     std::vector<Stats*> postStats1;

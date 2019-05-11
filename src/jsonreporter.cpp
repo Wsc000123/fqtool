@@ -130,6 +130,26 @@ void JsonReporter::report(FilterResult* fresult, Stats* preStats1, Stats* postSt
         fresult->reportPolyXTrimJson(jPolyXTrim);
         jReport["polyx_trimming"] = jPolyXTrim;
     }
+    // read1 before filtering
+    if(preStats1){
+        jReport["read1_before_filtering"] = preStats1->reportJson();
+    }
+    // read2 before filtering
+    if(preStats2){
+        jReport["read2_before_filtering"] = preStats2->reportJson();
+    }
+    // read1 after filtering
+    if(postStats1){
+        std::string name = "read1_after_filtering";
+        if(mOptions->mergePE.enabled){
+            name = "merged_and_filtered";
+        }
+        jReport[name] = postStats1->reportJson();
+    }
+    // read2 after filtering
+    if(postStats2 && !mOptions->mergePE.enabled){
+        jReport["read2_after_filtering"] = postStats2->reportJson();
+    }
     ofs << jReport;
     ofs.close();
 }
