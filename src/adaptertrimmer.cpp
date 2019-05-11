@@ -71,7 +71,6 @@ bool AdapterTrimmer::trimBySequence(Read* r, FilterResult* fr, std::string& adap
     if(found){
         if(pos < 0){
             std::string adapter = adapterSeq.substr(-pos, alen + pos);
-            std::cout << adapter << std::endl;
             r->seq.seqStr.resize(0);
             r->quality.resize(0);
             if(fr){

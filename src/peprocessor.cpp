@@ -429,7 +429,6 @@ bool PairEndProcessor::processPairEnd(ReadPairPack* pack, ThreadConfig* config){
             delete r2;
         }
     }
-
     if(!mOptions->split.enabled){
         mOutputMtx.lock();
     }

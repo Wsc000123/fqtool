@@ -223,7 +223,7 @@ void FilterResult::reportJsonBasic(jsn::json& j){
 CTML::Node FilterResult::reportHtmlBasic(size_t totalReads, size_t totalBases){
     CTML::Node table("table.summary_table");
     table.AppendChild(htmlutil::make2ColRowNode("Reads Passed Filters", std::to_string(mFilterReadStats[COMMONCONST::PASS_FILTER]) + "(" + std::to_string(mFilterReadStats[COMMONCONST::PASS_FILTER] * 100.0 / totalBases) + "%)")); 
-    table.AppendChild(htmlutil::make2ColRowNode("Low Quality Reads", std::to_string(mFilterReadStats[COMMONCONST::PASS_FILTER]) + "(" + std::to_string(mFilterReadStats[COMMONCONST::PASS_FILTER] * 100.0 /totalBases)));
+    table.AppendChild(htmlutil::make2ColRowNode("Low Quality Reads", std::to_string(mFilterReadStats[COMMONCONST::FAIL_QUALITY]) + "(" + std::to_string(mFilterReadStats[COMMONCONST::FAIL_QUALITY] * 100.0 /totalBases) + "%)"));
     table.AppendChild(htmlutil::make2ColRowNode("Too Many N Reads", std::to_string(mFilterReadStats[COMMONCONST::FAIL_N_BASE]) + "(" + std::to_string(mFilterReadStats[COMMONCONST::FAIL_N_BASE] * 100.0 / totalBases) + "%)"));
     if(mOptions->correction.enabled){
         table.AppendChild(htmlutil::make2ColRowNode("Corrected Reads", std::to_string(mCorrectedReads) + "(" + std::to_string(mCorrectedReads * 100.0 / totalReads) + "%)"));
@@ -267,10 +267,10 @@ void FilterResult::reportAdaptersJsonDetails(jsn::json& j, std::map<std::string,
 CTML::Node FilterResult::reportAdaptersHtmlDetails(std::map<std::string, size_t>& adapterCounts, size_t totalBases){
     CTML::Node table("table.summary_table");
     CTML::Node tableHeadRow("tr");
-    CTML::Node tableHeadCol1("td.col1", "Sequence");
-    tableHeadCol1.SetAttribute("style", "'font-size:14px;color:#ffffff;background:#556699'");
+    CTML::Node tableHeadCol1("td.adapter_col", "Sequence");
+    tableHeadCol1.SetAttribute("style", "font-size:14px;color:#ffffff;background:#556699");
     CTML::Node tableHeadCol2("td.col2", "Occurences");
-    tableHeadCol2.SetAttribute("style", "'font-size:14px;color:#ffffff;background:#556699'");
+    tableHeadCol2.SetAttribute("style", "font-size:14px;color:#ffffff;background:#556699");
     tableHeadRow.AppendChild(tableHeadCol1).AppendChild(tableHeadCol2);
     table.AppendChild(tableHeadRow);
     size_t totalAdapters = 0;
@@ -292,7 +292,10 @@ CTML::Node FilterResult::reportAdaptersHtmlDetails(std::map<std::string, size_t>
         if(e.second / dTotalAdapters < mOptions->adapter.reportThreshold){
             continue;
         }
-        table.AppendChild(htmlutil::make2ColRowNode(e.first, e.second));
+        CTML::Node row("tr");
+        row.AppendChild(CTML::Node("td.adapter_col", e.first));
+        row.AppendChild(CTML::Node("td.col2", std::to_string(e.second)));
+        table.AppendChild(row);
         reported += e.second;
     }
     size_t unreported = totalAdapters - reported;

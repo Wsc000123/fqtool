@@ -29,20 +29,20 @@ void JsonReporter::report(FilterResult* fresult, Stats* preStats1, Stats* postSt
     long preTotalGC = preStats1->getGCNumber();
     int preRead1Length = preStats1->getMeanLength();
     int preRead2Length = 0;
-    long postTotalReads = preStats1->getReads();
-    long postTotalBases = preStats1->getBases();
-    long postQ20Bases = preStats1->getQ20();
-    long postQ30Bases = preStats1->getQ30();
-    long postTotalGC = preStats1->getGCNumber();
+    long postTotalReads = postStats1->getReads();
+    long postTotalBases = postStats1->getBases();
+    long postQ20Bases = postStats1->getQ20();
+    long postQ30Bases = postStats1->getQ30();
+    long postTotalGC = postStats1->getGCNumber();
     int postRead1Length = postStats1->getMeanLength();
     int postRead2Length = 0;
     
     if(preStats2 && postStats2){
-        preTotalReads += postStats2->getReads();
-        preTotalBases += postStats2->getBases();
-        preQ20Bases += postStats2->getQ20();
-        preQ30Bases += postStats2->getQ30();
-        preTotalGC += postStats2->getGCNumber();
+        preTotalReads += preStats2->getReads();
+        preTotalBases += preStats2->getBases();
+        preQ20Bases += preStats2->getQ20();
+        preQ30Bases += preStats2->getQ30();
+        preTotalGC += preStats2->getGCNumber();
         postTotalReads += postStats2->getReads();
         postTotalBases += postStats2->getBases();
         postQ20Bases += postStats2->getQ20();

@@ -83,20 +83,20 @@ void HtmlReporter::printSummary(CTML::Document& d, FilterResult* fresult, Stats*
     long preTotalGC = preStats1->getGCNumber();
     int preRead1Length = preStats1->getMeanLength();
     int preRead2Length = 0;
-    long postTotalReads = preStats1->getReads();
-    long postTotalBases = preStats1->getBases();
-    long postQ20Bases = preStats1->getQ20();
-    long postQ30Bases = preStats1->getQ30();
-    long postTotalGC = preStats1->getGCNumber();
+    long postTotalReads = postStats1->getReads();
+    long postTotalBases = postStats1->getBases();
+    long postQ20Bases = postStats1->getQ20();
+    long postQ30Bases = postStats1->getQ30();
+    long postTotalGC = postStats1->getGCNumber();
     int postRead1Length = postStats1->getMeanLength();
     int postRead2Length = 0;
 
     if(preStats2 && postStats2){
-        preTotalReads += postStats2->getReads();
-        preTotalBases += postStats2->getBases();
-        preQ20Bases += postStats2->getQ20();
-        preQ30Bases += postStats2->getQ30();
-        preTotalGC += postStats2->getGCNumber();
+        preTotalReads += preStats2->getReads();
+        preTotalBases += preStats2->getBases();
+        preQ20Bases += preStats2->getQ20();
+        preQ30Bases += preStats2->getQ30();
+        preTotalGC += preStats2->getGCNumber();
         postTotalReads += postStats2->getReads();
         postTotalBases += postStats2->getBases();
         postQ20Bases += postStats2->getQ20();
@@ -135,6 +135,26 @@ void HtmlReporter::printSummary(CTML::Document& d, FilterResult* fresult, Stats*
     summaryTitle.AppendChild(summaryTitleLink);
     summarySection.AppendChild(summaryTitle);
     CTML::Node summaryID("div#summary");
+    // summary->general
+    CTML::Node generalSection("div.subsection_title", "General");
+    generalSection.SetAttribute("onclick", "showOrHide('general')");
+    CTML::Node generalID("div#general");
+    CTML::Node generalTable("table.summary_table");
+    generalTable.AppendChild(htmlutil::make2ColRowNode("Sequencing", sequencingInfo));
+    if(mOptions->isPaired()){
+        generalTable.AppendChild(htmlutil::make2ColRowNode("Insert Size Peak", mInsertSizePeak));
+    }
+    if(mOptions->adapter.enableTriming){
+        if(!mOptions->adapter.detectedAdapterSeqR1.empty()){
+            generalTable.AppendChild(htmlutil::make2ColRowNode("Detected Read1 Adapter", mOptions->adapter.detectedAdapterSeqR1));
+        }
+        if(!mOptions->adapter.detectedAdapterSeqR2.empty()){
+            generalTable.AppendChild(htmlutil::make2ColRowNode("Detected Read2 Adapter", mOptions->adapter.detectedAdapterSeqR2));
+        }
+    }
+    generalID.AppendChild(generalTable);
+    generalSection.AppendChild(generalID);
+    summaryID.AppendChild(generalSection);
     // summary->preFilter
     CTML::Node preFilterSection("div.subsection_title", "Before Filtering");
     preFilterSection.SetAttribute("onclick", "showOrHide('before_filtering_summary')");
@@ -142,8 +162,8 @@ void HtmlReporter::printSummary(CTML::Document& d, FilterResult* fresult, Stats*
     CTML::Node preFilterTable("table.summary_table");
     preFilterTable.AppendChild(htmlutil::make2ColRowNode("Total Reads", preTotalReads));
     preFilterTable.AppendChild(htmlutil::make2ColRowNode("Total Bases", preTotalBases));
-    preFilterTable.AppendChild(htmlutil::make2ColRowNode("Q20 Bases", std::to_string(preQ20Bases) + "(" + std::to_string(preQ20Rate) + ")"));
-    preFilterTable.AppendChild(htmlutil::make2ColRowNode("Q30 Bases", std::to_string(preQ30Bases) + "(" + std::to_string(preQ30Rate) + ")"));
+    preFilterTable.AppendChild(htmlutil::make2ColRowNode("Q20 Bases", std::to_string(preQ20Bases) + "(" + std::to_string(preQ20Rate * 100) + "%)"));
+    preFilterTable.AppendChild(htmlutil::make2ColRowNode("Q30 Bases", std::to_string(preQ30Bases) + "(" + std::to_string(preQ30Rate * 100) + "%)"));
     preFilterTable.AppendChild(htmlutil::make2ColRowNode("GC Content", preGCRate));
     preFilterTable.AppendChild(htmlutil::make2ColRowNode("Read1 Mean Length", preRead1Length));
     if(mOptions->isPaired()){
@@ -159,8 +179,8 @@ void HtmlReporter::printSummary(CTML::Document& d, FilterResult* fresult, Stats*
     CTML::Node postFilterTable("table.summary_table");
     postFilterTable.AppendChild(htmlutil::make2ColRowNode("Total Reads", postTotalReads));
     postFilterTable.AppendChild(htmlutil::make2ColRowNode("Total Bases", postTotalBases));
-    postFilterTable.AppendChild(htmlutil::make2ColRowNode("Q20 Bases", std::to_string(postQ20Bases) + "(" + std::to_string(postQ20Rate) + ")"));
-    postFilterTable.AppendChild(htmlutil::make2ColRowNode("Q30 Bases", std::to_string(postQ30Bases) + "(" + std::to_string(postQ30Rate) + ")"));
+    postFilterTable.AppendChild(htmlutil::make2ColRowNode("Q20 Bases", std::to_string(postQ20Bases) + "(" + std::to_string(postQ20Rate * 100) + "%)"));
+    postFilterTable.AppendChild(htmlutil::make2ColRowNode("Q30 Bases", std::to_string(postQ30Bases) + "(" + std::to_string(postQ30Rate * 100) + "%)"));
     postFilterTable.AppendChild(htmlutil::make2ColRowNode("GC Content", postGCRate));
     postFilterTable.AppendChild(htmlutil::make2ColRowNode("Read1 Mean Length", postRead1Length));
     if(mOptions->isPaired()){
