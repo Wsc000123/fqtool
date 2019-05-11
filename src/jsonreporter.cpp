@@ -150,6 +150,6 @@ void JsonReporter::report(FilterResult* fresult, Stats* preStats1, Stats* postSt
     if(postStats2 && !mOptions->mergePE.enabled){
         jReport["read2_after_filtering"] = postStats2->reportJson();
     }
-    ofs << jReport;
+    ofs << jReport.dump(4);
     ofs.close();
 }
