@@ -88,7 +88,7 @@ void PolyX::trimPolyX(Read* r, int compareReq, FilterResult* fr){
     }
 
     if(pos + 1 >- compareReq){
-        int poly;
+        int poly = 0;
         int maxCount = -1;
         for(int b = 0; b < 4; ++b){
             if(atcgNumbers[b] > maxCount){

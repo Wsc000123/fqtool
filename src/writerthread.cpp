@@ -31,29 +31,25 @@ bool WriterThread::setInputCompleted(){
 }
 
 void WriterThread::output(){
-    if(mOutputCounter >= mInputCounter){
-        usleep(100);
-    }
     while(mOutputCounter < mInputCounter){
-        mWriter->write(mRingBuffer[mOutputCounter], 
-                            mRingBufferSizes[mOutputCounter]);
+        mWriter->write(mRingBuffer[mOutputCounter], mRingBufferSizes[mOutputCounter]);
         delete mRingBuffer[mOutputCounter];
         mRingBuffer[mOutputCounter] = NULL;
         ++mOutputCounter;
     }
-    mOutputCounter = mOutputCounter % mOptions->bufSize.maxPacksInReadPackRepo;
-    mInputCounter = mInputCounter % mOptions->bufSize.maxPacksInReadPackRepo;
+    if(mOutputCounter >= mOptions->bufSize.maxPacksInReadPackRepo){
+        mOutputCounter = mOutputCounter % mOptions->bufSize.maxPacksInReadPackRepo;
+        mInputCounter = mInputCounter % mOptions->bufSize.maxPacksInReadPackRepo;
+    }
 }
 
 void WriterThread::input(char* cstr, size_t size){
-    while(mInputCounter == mOptions->bufSize.maxPacksInReadPackRepo){
-        usleep(100);
+    while(mInputCounter >= mOptions->bufSize.maxPacksInReadPackRepo){
+        usleep(1);
     }
-    if(mInputCounter < mOptions->bufSize.maxPacksInReadPackRepo){ 
-        mRingBuffer[mInputCounter] = cstr;
-        mRingBufferSizes[mInputCounter] = size;
-        ++mInputCounter;
-    }
+    mRingBuffer[mInputCounter] = cstr;
+    mRingBufferSizes[mInputCounter] = size;
+    ++mInputCounter;
 }
 
 void WriterThread::cleanup(){

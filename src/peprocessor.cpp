@@ -271,44 +271,49 @@ bool PairEndProcessor::processPairEnd(ReadPairPack* pack, ThreadConfig* config){
         ReadPair* pair = pack->data[p];
         Read* or1 = pair->left;
         Read* or2 = pair->right;
-        
+        // do preprocess statistics
         config->getPreStats1()->statRead(or1);
         config->getPreStats2()->statRead(or2);
-
+        // do duplicate analysis if enabled
         if(mOptions->duplicate.enabled){
             mDuplicate->statPair(or1, or2);
         }
-
+        // filter by index if enabled
         if(mOptions->indexFilter.enabled && mFilter->filterByIndex(or1, or2)){
             delete pair;
             continue;
         }
-
+        // process umi if enabled
         if(mOptions->umi.enabled){
             mUmiProcessor->process(or1, or2);
         }
-
+        // trim and cut by length and quality if enabled
         Read* r1 = mFilter->trimAndCut(or1, mOptions->trim.front1, mOptions->trim.tail1);
         Read* r2 = mFilter->trimAndCut(or2, mOptions->trim.front2, mOptions->trim.tail2);
-
+        // trim polyG if enabled
         if(r1 && r2){
             if(mOptions->polyGTrim.enabled){
                 PolyX::trimPolyG(r1, r2, mOptions->polyGTrim.minLen);
             }
         }
-
+        // do insertsize statistics only in thread 0, do adapter trimming and base correction if enabled
         bool insertSizeEvaluated = false;
         if(r1 && r2 && (mOptions->adapter.enableTriming || mOptions->correction.enabled)){
             OverlapResult ov = OverlapAnalysis::analyze(r1, r2, mOptions->overlapDiffLimit, mOptions->overlapRequire);
+            // first stat insertsize
             if(config->getThreadId() == 0){
                 statInsertSize(r1, r2, ov);
                 insertSizeEvaluated = true;
             }
+            // second do base correction
             if(mOptions->correction.enabled){
                 BaseCorrector::correctByOverlapAnalysis(r1, r2, config->getFilterResult(), ov);
             }
+            // then do adapter trimming
             if(mOptions->adapter.enableTriming){
+                // trim by overlap analysis firstly
                 bool trimmed = AdapterTrimmer::trimByOverlapAnalysis(r1, r2, config->getFilterResult(), ov);
+                // if failed, trim by input adapter if possible
                 if(!trimmed){
                     if(mOptions->adapter.adapterSeqR1Provided){
                         AdapterTrimmer::trimBySequence(r1, config->getFilterResult(), mOptions->adapter.inputAdapterSeqR1, false);
@@ -319,19 +324,19 @@ bool PairEndProcessor::processPairEnd(ReadPairPack* pack, ThreadConfig* config){
                 }
             }
         }
-
-        if(config->getThreadId() == 0 && !insertSizeEvaluated && r1 != NULL && r2!=NULL){
+        // do insertsize statistics if haven't done in previous step
+        if(config->getThreadId() == 0 && !insertSizeEvaluated && r1 && r2){
               OverlapResult ov = OverlapAnalysis::analyze(r1, r2, mOptions->overlapDiffLimit, mOptions->overlapRequire);
               statInsertSize(r1, r2, ov);
               insertSizeEvaluated = true;
         }
-
+        // trim polyX if enabled
         if(r1 && r2){
             if(mOptions->polyXTrim.enabled){
                 PolyX::trimPolyX(r1, r2, mOptions->polyXTrim.minLen);
             }
         }
-
+        // trim too long read if enabled
         if(r1 && r2){
             if(mOptions->trim.maxLen1 > 0 && mOptions->trim.maxLen1 < r1->length()){
                 r1->resize(mOptions->trim.maxLen1);
@@ -340,7 +345,7 @@ bool PairEndProcessor::processPairEnd(ReadPairPack* pack, ThreadConfig* config){
                 r2->resize(mOptions->trim.maxLen2);
             }
         }
-
+        // merge reads if enabled
         Read* merged = NULL;
         bool mergeProcessed = false;
         if(mOptions->mergePE.enabled && r1 && r2){
