@@ -151,7 +151,7 @@ class Stats{
         }
         
         /** Summary statistic items, get mBases, mCycles, mQ20Bases, mQ30Bases, mQ20Total, mQ30Total,
-         * mQualityCurves["mean"], mQualityCurves["A/T/C/G/N"], mContentCurves["A/T/C/G/N"], mContentCurves["GC"]
+         * mQualityCurves["Mean"], mQualityCurves["A/T/C/G/N"], mContentCurves["A/T/C/G/N"], mContentCurves["GC"]
          * mKmerMin, mKmerMax, after summary, summarize will be set to true
          * @param forced forced to run summarize
          * summarize will only run if (mSummarized is false) || (mSummarized is true && force = false)

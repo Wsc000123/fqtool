@@ -182,7 +182,7 @@ void Stats::summarize(bool forced){
     for(int i = 0; i < mCycles; ++i){
         meanQualCurve[i] = (double)mCycleTotalQuality[i] / (double)mCycleTotalBase[i];
     }
-    mQualityCurves["mean"] = meanQualCurve;
+    mQualityCurves["Mean"] = meanQualCurve;
 
     // quality curves and base contents curves for different nucleotides
     char nucleotides[5] = {'A', 'T', 'C', 'G', 'N'};
@@ -391,30 +391,30 @@ bool Stats::isLongRead(){
 
 jsn::json Stats::reportJson(){
     jsn::json summary;
-    summary["total_reads"] = mReads;
-    summary["total_bases"] = mBases;
-    summary["q20_bases"] = mQ20Total;
-    summary["q30_bases"] = mQ30Total;
-    summary["total_cycles"] = mCycles;
+    summary["TotalReads"] = mReads;
+    summary["TotalBases"] = mBases;
+    summary["Q20Bases"] = mQ20Total;
+    summary["Q30Bases"] = mQ30Total;
+    summary["TotalCycles"] = mCycles;
     jsn::json qualContent;
-    std::string qualNames[5] = {"A", "T", "C", "G", "mean"};
+    std::string qualNames[5] = {"A", "T", "C", "G", "Mean"};
     for(int i = 0; i < 5; ++i){
         qualContent[qualNames[i]] = std::vector<double>(mQualityCurves[qualNames[i]], mQualityCurves[qualNames[i]] + mCycles);
     }
-    summary["quality_curves"] = qualContent;
+    summary["QualityCurves"] = qualContent;
     jsn::json baseContent;
     std::string contentNames[6] = {"A", "T", "C", "G", "N", "GC"};
     for(int i = 0; i < 6; ++i){
         baseContent[contentNames[i]] = std::vector<double>(mContentCurves[contentNames[i]], mContentCurves[contentNames[i]] + mCycles);
     }
-    summary["content_curves"] = baseContent;
+    summary["ContentCurves"] = baseContent;
     if(mKmerLen){
         jsn::json kmer;
         for(int i = 0; i < mKmerBufLen; ++i){
             std::string seq = Evaluator::int2seq(i, mKmerLen);
             kmer[seq] = std::to_string(mKmer[i]);
         }
-        summary["kmer_count"] = kmer;
+        summary["KmerCount"] = kmer;
     }
     if(mOverRepSampling){
         jsn::json ora;
@@ -424,7 +424,7 @@ jsn::json Stats::reportJson(){
             }
             ora[e.first] = e.second;
         }
-        summary["overrepresented_sequences"] = ora;
+        summary["OverrepresentedSequences"] = ora;
     }
     return summary;
 }
@@ -629,7 +629,7 @@ CTML::Node Stats::reportHtmlQuality(std::string filteringType, std::string readN
     std::string divName = util::replace(subsection, " ", "_");
     divName = util::replace(divName, ":", "_");
     std::string title = "";
-    std::string alphabets[5] = {"A", "T", "C", "G", "mean"};
+    std::string alphabets[5] = {"A", "T", "C", "G", "Mean"};
     std::string colors[5] = {"rgba(128,128,0,1.0)", "rgba(128,0,128,1.0)", "rgba(0,255,0,1.0)", "rgba(0,0,255,1.0)", "rgba(20,20,20,1.0)"};
     std::string json_str = "var data=[";
     int *x = new int[mCycles];

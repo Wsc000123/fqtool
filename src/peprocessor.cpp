@@ -528,39 +528,38 @@ void PairEndProcessor::destroyReadPairPackRepository(){
 }
 
 void PairEndProcessor::producePack(ReadPairPack* pack){
-    if(mRepo.writePos >= mOptions->bufSize.maxPacksInReadPackRepo){
-    }
     while(mRepo.writePos >= mOptions->bufSize.maxPacksInReadPackRepo){
-        usleep(1000);
+        usleep(1);
     }
     mRepo.packBuffer[mRepo.writePos] = pack;
+    util::loginfo("producer produced pack " + std::to_string(mRepo.writePos), mOptions->logmtx);
     ++mRepo.writePos;
 }
 
 void PairEndProcessor::consumePack(ThreadConfig* config){
     mInputMtx.lock();
     while(mRepo.writePos <= mRepo.readPos){
-        usleep(1000);
+        usleep(1);
         if(mProduceFinished){
             mInputMtx.unlock();
             return;
         }
     }
-    ReadPairPack* data = mRepo.packBuffer[mRepo.readPos];
+    size_t packNum = mRepo.readPos;
+    ReadPairPack* data = mRepo.packBuffer[packNum];
     ++mRepo.readPos;
     if(mRepo.readPos >= mOptions->bufSize.maxPacksInReadPackRepo){
         mRepo.readPos = mRepo.readPos %  mOptions->bufSize.maxPacksInReadPackRepo;
         mRepo.writePos = mRepo.writePos % mOptions->bufSize.maxPacksInReadPackRepo;
-        processPairEnd(data, config);
-        mInputMtx.unlock();
-    }else{
-        mInputMtx.unlock();
-        processPairEnd(data, config);
     }
+    mInputMtx.unlock();
+    util::loginfo("thread " + std::to_string(config->getThreadId()) + " start processing pack " + std::to_string(packNum), mOptions->logmtx);
+    processPairEnd(data, config);
+    util::loginfo("thread " + std::to_string(config->getThreadId()) + " finish processing pack " + std::to_string(packNum), mOptions->logmtx);
 }
 
 void PairEndProcessor::producerTask(){
-    util::loginfo("loading  data started", mOptions->logmtx);
+    util::loginfo("loading data started", mOptions->logmtx);
     size_t readNum = 0;
     ReadPair** data = new ReadPair*[mOptions->bufSize.maxReadsInPack];
     std::memset(data, 0, sizeof(ReadPair*) * mOptions->bufSize.maxReadsInPack);
@@ -570,6 +569,9 @@ void PairEndProcessor::producerTask(){
         ReadPair* readPair = reader.read();
         ++readNum;
         if(!readPair){
+            if(count == 0){
+                break;
+            }
             ReadPairPack* pack = new ReadPairPack;
             pack->data = data;
             pack->count = count;
@@ -591,13 +593,13 @@ void PairEndProcessor::producerTask(){
             data = new ReadPair*[mOptions->bufSize.maxReadsInPack];
             std::memset(data, 0, sizeof(ReadPair*) * mOptions->bufSize.maxReadsInPack);
             while(mRepo.writePos - mRepo.readPos > mOptions->bufSize.maxPacksInMemory){
-                usleep(1000);
+                usleep(1);
             }
             readNum += count;
             if(readNum % (mOptions->bufSize.maxReadsInPack * mOptions->bufSize.maxPacksInMemory) == 0 && mLeftWriter){
                 while( (mLeftWriter && mLeftWriter->bufferLength() > mOptions->bufSize.maxPacksInMemory) ||
                        (mRightWriter && mRightWriter->bufferLength() > mOptions->bufSize.maxPacksInMemory)){
-                    usleep(1000);
+                    usleep(1);
                 }
             }
             count = 0;
@@ -617,18 +619,11 @@ void PairEndProcessor::consumerTask(ThreadConfig* config){
             if(mProduceFinished){
                 break;
             }
-            usleep(1000);
+            usleep(1);
         }
         if(mProduceFinished && mRepo.writePos == mRepo.readPos){
             ++mFinishedThreads;
-            std::string msg = "thread " + std::to_string(config->getThreadId() + 1) + " data processing completed";
-            util::loginfo(msg, mOptions->logmtx);
             break;
-        }
-        if(mProduceFinished){
-            std::string msg = "thread " + std::to_string(config->getThreadId() + 1) + " is processing the " +
-                              std::to_string(mRepo.readPos) + " / " + std::to_string(mRepo.writePos) + " pack";
-            util::loginfo(msg, mOptions->logmtx);
         }
         consumePack(config);
     }
@@ -652,8 +647,7 @@ void PairEndProcessor::consumerTask(ThreadConfig* config){
             mFailedWriter->setInputCompleted();
         }
     }
-    std::string msg = "thread " + std::to_string(config->getThreadId() + 1) + " finished";
-    util::loginfo(msg, mOptions->logmtx);
+    util::loginfo("thread " + std::to_string(config->getThreadId()) + " finished", mOptions->logmtx);
 }
 
 void PairEndProcessor::writeTask(WriterThread* config){

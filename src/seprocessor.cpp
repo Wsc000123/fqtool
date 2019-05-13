@@ -70,9 +70,10 @@ void SingleEndProcessor::destroyReadPackRepository(){
 
 void SingleEndProcessor::producePack(ReadPack* pack){
     while(mRepo.writePos ==  mOptions->bufSize.maxPacksInReadPackRepo){
-        usleep(1000);
+        usleep(1);
     }
     mRepo.packBuffer[mRepo.writePos] = pack;
+    util::loginfo("producer produced pack " + std::to_string(mRepo.writePos), mOptions->logmtx);
     ++mRepo.writePos;
 }
 
@@ -87,6 +88,9 @@ void SingleEndProcessor::producerTask(){
         Read* read = reader.read();
         ++readNum;
         if(!read){
+            if(count == 0){
+                break;
+            }
             ReadPack* pack = new ReadPack;
             pack->data = data;
             pack->count = count;
@@ -134,16 +138,13 @@ void SingleEndProcessor::consumerTask(ThreadConfig* config){
             if(mProduceFinished){
                 break;
             }
-            usleep(1000);
+            usleep(1);
         }
         if(mProduceFinished && mRepo.writePos == mRepo.readPos){
             ++mFinishedThreads;
-            util::loginfo("thead " + std::to_string(config->getThreadId()) + " data processing finished", mOptions->logmtx);
             break;
         }
-        util::loginfo("thread " + std::to_string(config->getThreadId()) + " start processing pack " + std::to_string(mRepo.readPos) + "/" + std::to_string(mRepo.writePos) + " pack", mOptions->logmtx); 
         consumePack(config);
-        util::loginfo("thread " + std::to_string(config->getThreadId()) + " finish processing pack " + std::to_string(mRepo.readPos) + "/" + std::to_string(mRepo.writePos) + " pack", mOptions->logmtx); 
     }
     if(mFinishedThreads == mOptions->thread){
         if(mLeftWriter){
@@ -153,30 +154,29 @@ void SingleEndProcessor::consumerTask(ThreadConfig* config){
             mFailedWriter->setInputCompleted();
         }
     }
-    util::loginfo("thread " + std::to_string(config->getThreadId()) + " finished word", mOptions->logmtx);
+    util::loginfo("thread " + std::to_string(config->getThreadId()) + " finished", mOptions->logmtx);
 }
 
 void SingleEndProcessor::consumePack(ThreadConfig* config){
-    ReadPack* data;
     mInputMtx.lock();
     while(mRepo.writePos <= mRepo.readPos){
-        usleep(1000);
+        usleep(1);
         if(mProduceFinished){
             mInputMtx.unlock();
             return;
         }
     }
-    data = mRepo.packBuffer[mRepo.readPos];
+    size_t packNum = mRepo.readPos;
+    ReadPack* data = mRepo.packBuffer[packNum];
     ++mRepo.readPos;
     if(mRepo.readPos == mOptions->bufSize.maxPacksInReadPackRepo){
-        processSingleEnd(data, config);
         mRepo.readPos = mRepo.readPos % mOptions->bufSize.maxPacksInReadPackRepo;
         mRepo.writePos = mRepo.writePos % mOptions->bufSize.maxPacksInReadPackRepo;
-        mInputMtx.unlock();
-    }else{
-        mInputMtx.unlock();
-        processSingleEnd(data, config);
     }
+    mInputMtx.unlock();
+    util::loginfo("thread " + std::to_string(config->getThreadId()) + " start processing pack " + std::to_string(packNum), mOptions->logmtx);
+    processSingleEnd(data, config);
+    util::loginfo("thread " + std::to_string(config->getThreadId()) + " finish processing pack " + std::to_string(packNum), mOptions->logmtx);
 }
 
 bool SingleEndProcessor::process(){

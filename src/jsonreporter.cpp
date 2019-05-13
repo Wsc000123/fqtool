@@ -61,94 +61,94 @@ void JsonReporter::report(FilterResult* fresult, Stats* preStats1, Stats* postSt
 
     // whole report
     jsn::json jReport;
-    // pre filtering qc summary
+    // pre filtering qc Summary
     jsn::json jPreFilterQC;
-    jPreFilterQC["total_reads"] = preTotalReads;
-    jPreFilterQC["total_bases"] = preTotalBases;
-    jPreFilterQC["Q20_bases"] = preQ20Bases;
-    jPreFilterQC["Q30_bases"] = preQ30Bases;
-    jPreFilterQC["Q20_rate"] = preQ20Rate;
-    jPreFilterQC["Q30_rate"] = preQ30Rate;
-    jPreFilterQC["read1_mean_length"] = preRead1Length;
+    jPreFilterQC["TotalReads"] = preTotalReads;
+    jPreFilterQC["TotalBases"] = preTotalBases;
+    jPreFilterQC["Q20Bases"] = preQ20Bases;
+    jPreFilterQC["Q30Bases"] = preQ30Bases;
+    jPreFilterQC["Q20BaseRate"] = preQ20Rate;
+    jPreFilterQC["Q30BaseRate"] = preQ30Rate;
+    jPreFilterQC["Read1Length"] = preRead1Length;
     if(mOptions->isPaired()){
-        jPreFilterQC["read2_mean_length"] = preRead2Length;
+        jPreFilterQC["Read2Length"] = preRead2Length;
     }
-    jPreFilterQC["gc_content"] = preGCRate;
-    jReport["summary"]["before_filtering"] = jPreFilterQC;
+    jPreFilterQC["GCRate"] = preGCRate;
+    jReport["Summary"]["BeforeFiltering"] = jPreFilterQC;
 
-    // after filter qc summary
+    // after filter qc Summary
     jsn::json jPostFilterQC;
-    jPostFilterQC["total_reads"] = postTotalReads;
-    jPostFilterQC["total_bases"] = postTotalBases;
-    jPostFilterQC["Q20_bases"] = postQ20Bases;
-    jPostFilterQC["Q30_bases"] = postQ30Bases;
-    jPostFilterQC["Q20_rate"] = postQ20Rate;
-    jPostFilterQC["Q30_rate"] = postQ30Rate;
-    jPostFilterQC["read1_mean_length"] = postRead1Length;
+    jPostFilterQC["TotalReads"] = postTotalReads;
+    jPostFilterQC["TotalBases"] = postTotalBases;
+    jPostFilterQC["Q20Bases"] = postQ20Bases;
+    jPostFilterQC["Q30Bases"] = postQ30Bases;
+    jPostFilterQC["Q20BaseRate"] = postQ20Rate;
+    jPostFilterQC["Q30BaseRate"] = postQ30Rate;
+    jPostFilterQC["Read1Length"] = postRead1Length;
     if(mOptions->isPaired()){
-        jPostFilterQC["read2_mean_length"] = postRead2Length;
+        jPostFilterQC["Read2Length"] = postRead2Length;
     }
-    jPostFilterQC["gc_content"] = postGCRate;
-    jReport["summary"]["after_filtering"] = jPostFilterQC;
+    jPostFilterQC["GCRate"] = postGCRate;
+    jReport["Summary"]["AfterFiltering"] = jPostFilterQC;
 
     // filter result
     jsn::json jFilterResult;
     fresult->reportJsonBasic(jFilterResult);
-    jReport["filtering_result"] = jFilterResult;
+    jReport["FilterResult"] = jFilterResult;
 
     // duplication result
     if(mOptions->duplicate.enabled){
         jsn::json jDupResult;
-        jDupResult["rate"] = mDupRate;
+        jDupResult["Rate"] = mDupRate;
         std::vector<int32_t> dupVec(mDupHist, mDupHist + mOptions->duplicate.histSize);
-        jDupResult["histogram"] = dupVec;
+        jDupResult["Histogram"] = dupVec;
         std::vector<double> gcVec(mDupMeanGC, mDupMeanGC + mOptions->duplicate.histSize);
-        jDupResult["mean_gc"] = gcVec;
-        jReport["duplication"] = jDupResult;
+        jDupResult["MeanGC"] = gcVec;
+        jReport["Duplication"] = jDupResult;
     }
 
     // inset size result
     if(mOptions->isPaired()){
         jsn::json jInsert;
-        jInsert["peak"] = mInsertSizePeak;
-        jInsert["unknown"] = mInsertHist[mOptions->insertSizeMax];
+        jInsert["Peak"] = mInsertSizePeak;
+        jInsert["Unknown"] = mInsertHist[mOptions->insertSizeMax];
         std::vector<int32_t> insVec(mInsertHist, mInsertHist + mOptions->insertSizeMax);
-        jInsert["histogram"] = insVec;
-        jReport["insert_size"] = jInsert;
+        jInsert["Histogram"] = insVec;
+        jReport["InsertSize"] = jInsert;
     }
 
     // adapter trimming result
     if(mOptions->adapter.enableTriming){
         jsn::json jAdapterTrim;
         fresult->reportAdaptersJsonSummary(jAdapterTrim);
-        jReport["adapter_trim"] = jAdapterTrim;
+        jReport["AdapterTrim"] = jAdapterTrim;
     }
 
     // polyx trimming result
     if(fresult && (mOptions->polyXTrim.enabled || mOptions->polyGTrim.enabled)){
         jsn::json jPolyXTrim;
         fresult->reportPolyXTrimJson(jPolyXTrim);
-        jReport["polyx_trimming"] = jPolyXTrim;
+        jReport["PolyxTrimming"] = jPolyXTrim;
     }
     // read1 before filtering
     if(preStats1){
-        jReport["read1_before_filtering"] = preStats1->reportJson();
+        jReport["Read1BeforeFiltering"] = preStats1->reportJson();
     }
     // read2 before filtering
     if(preStats2){
-        jReport["read2_before_filtering"] = preStats2->reportJson();
+        jReport["Read2BeforeFiltering"] = preStats2->reportJson();
     }
     // read1 after filtering
     if(postStats1){
-        std::string name = "read1_after_filtering";
+        std::string name = "Read1AfterFiltering";
         if(mOptions->mergePE.enabled){
-            name = "merged_and_filtered";
+            name = "MergedAndFiltered";
         }
         jReport[name] = postStats1->reportJson();
     }
     // read2 after filtering
     if(postStats2 && !mOptions->mergePE.enabled){
-        jReport["read2_after_filtering"] = postStats2->reportJson();
+        jReport["Read2AfterFiltering"] = postStats2->reportJson();
     }
     ofs << jReport.dump(4);
     ofs.close();

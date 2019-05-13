@@ -202,20 +202,20 @@ std::ostream& operator<<(std::ostream& os, FilterResult* re){
 }
 
 void FilterResult::reportJsonBasic(jsn::json& j){
-    j["passed_filter_reads"] = mFilterReadStats[COMMONCONST::PASS_FILTER];
-    j["low_quality_reads"] = mFilterReadStats[COMMONCONST::FAIL_QUALITY];
-    j["too_many_N_reads"] = mFilterReadStats[COMMONCONST::FAIL_N_BASE];
+    j["PassedFilterReads"] = mFilterReadStats[COMMONCONST::PASS_FILTER];
+    j["LowQualityReads"] = mFilterReadStats[COMMONCONST::FAIL_QUALITY];
+    j["TooManyNReads"] = mFilterReadStats[COMMONCONST::FAIL_N_BASE];
     if(mOptions->correction.enabled){
-        j["corrected_reads"] = mCorrectedReads;
-        j["corrected_bases"] = getTotalCorrectedBases();
+        j["CorrectedReads"] = mCorrectedReads;
+        j["CorrectedBases"] = getTotalCorrectedBases();
     }
     if(mOptions->complexityFilter.enabled){
-        j["low_complexity_reads"] = mFilterReadStats[COMMONCONST::FAIL_COMPLEXITY];
+        j["LowComplexityReads"] = mFilterReadStats[COMMONCONST::FAIL_COMPLEXITY];
     }
     if(mOptions->lengthFilter.enabled){
-        j["too_short_reads"] = mFilterReadStats[COMMONCONST::FAIL_LENGTH];
+        j["TooShortReads"] = mFilterReadStats[COMMONCONST::FAIL_LENGTH];
         if(mOptions->lengthFilter.maxReadLength > 0){
-            j["too_long_reads"] = mFilterReadStats[COMMONCONST::FAIL_TOO_LONG];
+            j["TooLongReads"] = mFilterReadStats[COMMONCONST::FAIL_TOO_LONG];
         }
     }
 }
@@ -260,7 +260,7 @@ void FilterResult::reportAdaptersJsonDetails(jsn::json& j, std::map<std::string,
     }
     size_t unreported = totalAdapters - reported;
     if(unreported > 0){
-        j["others"] = unreported;
+        j["Others"] = unreported;
     }
 }
 
@@ -310,19 +310,19 @@ CTML::Node FilterResult::reportAdaptersHtmlDetails(std::map<std::string, size_t>
 }
 
 void FilterResult::reportAdaptersJsonSummary(jsn::json& j){
-    j["adapter_trimmed_reads"] = mTrimmedAdapterReads;
-    j["adapter_trimmed_bases"] = mTrimmedAdapterBases;
-    j["read1_adapter_sequence"] = mOptions->adapter.adapterSeqR1Provided ? mOptions->adapter.inputAdapterSeqR1 : mOptions->adapter.detectedAdapterSeqR1;
+    j["AdapterTrimmedReads"] = mTrimmedAdapterReads;
+    j["AdapterTrimmedBases"] = mTrimmedAdapterBases;
+    j["Read1AdapterSequence"] = mOptions->adapter.adapterSeqR1Provided ? mOptions->adapter.inputAdapterSeqR1 : mOptions->adapter.detectedAdapterSeqR1;
     if(mPaired){
-        j["read2_adapter_sequence"] = mOptions->adapter.adapterSeqR2Provided ? mOptions->adapter.inputAdapterSeqR2 : mOptions->adapter.detectedAdapterSeqR2;
+        j["Read2AdapterSequence"] = mOptions->adapter.adapterSeqR2Provided ? mOptions->adapter.inputAdapterSeqR2 : mOptions->adapter.detectedAdapterSeqR2;
     }
     jsn::json jR1AdapterCount;
     reportAdaptersJsonDetails(jR1AdapterCount, mAdapter1Count);
-    j["read1_adapter_counts"] = jR1AdapterCount;
+    j["Read1AdapterCounts"] = jR1AdapterCount;
     if(mPaired){
         jsn::json jR2AdapterCount;
         reportAdaptersJsonDetails(jR2AdapterCount, mAdapter2Count);
-        j["read2_adapter_counts"] = jR2AdapterCount;
+        j["Read2AdapterCounts"] = jR2AdapterCount;
     }
 }
 
@@ -358,16 +358,16 @@ CTML::Node FilterResult::reportAdaptersHtmlSummary(size_t totalBases){
 
 void FilterResult::reportPolyXTrimJson(jsn::json& j){
     const char atcg[4] = {'A', 'T', 'C', 'G'};
-    j["total_polyx_trimmed_reads"] = std::accumulate(mTrimmedPolyXReads, mTrimmedPolyXReads + 4, 0);
+    j["TotalPolyxTrimmedReads"] = std::accumulate(mTrimmedPolyXReads, mTrimmedPolyXReads + 4, 0);
     jsn::json jPolyReads;
     for(int b = 0; b < 4; ++b){
         jPolyReads[atcg[b]] = mTrimmedPolyXReads[b];
     }
-    j["polyx_trimmed_reads"] = jPolyReads;
-    j["total_polyx_trimmed_bases"] = std::accumulate(mTrimmedPolyXBases, mTrimmedPolyXBases + 4, 0);
+    j["PolyxTrimmedReads"] = jPolyReads;
+    j["TotalPolyxTrimmedBases"] = std::accumulate(mTrimmedPolyXBases, mTrimmedPolyXBases + 4, 0);
     jsn::json jPolyBases;
     for(int b = 0; b < 4; ++b){
         jPolyBases[atcg[b]] = mTrimmedPolyXBases[b];
     }
-    j["polyx_trimmed_bases"] = jPolyBases;
+    j["PolyxTrimmedBases"] = jPolyBases;
 }
