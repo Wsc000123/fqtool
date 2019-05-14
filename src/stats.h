@@ -173,7 +173,7 @@ class Stats{
         /** Generate Quality part of the Html report
          * @param filteringType filtering type of report
          * @param readName library name 
-         * @return quality node
+         * @return qual node
          */
         CTML::Node reportHtmlQuality(std::string filteringType, std::string readName);
         

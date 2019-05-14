@@ -341,16 +341,16 @@ CTML::Node FilterResult::reportAdaptersHtmlSummary(size_t totalBases){
     adapter1Section.SetAttribute("onclick", "showOrHide('read1_adapters')");
     CTML::Node adapter1ID("div#read1_adapters");
     adapter1ID.AppendChild(reportAdaptersHtmlDetails(mAdapter1Count, totalBases));
-    adapter1Section.AppendChild(adapter1ID);
     adaptersID.AppendChild(adapter1Section);
+    adaptersID.AppendChild(adapter1ID);
     // adapters->raed2
     if(mPaired){
         CTML::Node adapter2Section("div.subsection_title", "Adapter or bad ligation of read2");
         adapter2Section.SetAttribute("onclick", "showOrHide('read2_adapters')");
         CTML::Node adapter2ID("div#read2_adapters");
         adapter2ID.AppendChild(reportAdaptersHtmlDetails(mAdapter2Count, totalBases));
-        adapter2Section.AppendChild(adapter2ID);
         adaptersID.AppendChild(adapter2Section);
+        adaptersID.AppendChild(adapter2ID);
     }
     adapterSection.AppendChild(adaptersID);
     return adapterSection;

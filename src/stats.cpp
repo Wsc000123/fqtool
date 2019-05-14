@@ -542,8 +542,8 @@ CTML::Node Stats::reportHtmlORA(std::string filteringType, std::string readName)
     ss << "    }"<< std::endl;
     ss << "}"<< std::endl;
     oraSectionJS.AppendText(ss.str());
-    oraSectionID.AppendChild(oraSectionJS);
     oraSection.AppendChild(oraSectionID);
+    oraSection.AppendChild(oraSectionJS);
     return oraSection;
 }
 
@@ -553,14 +553,19 @@ CTML::Node Stats::reportHtmlKmer(std::string filteringType, std::string readName
     std::string divName = util::replace(subsection, " ", "_");
     divName = util::replace(divName, ":", "_");
     
+    // section
     CTML::Node kmerSection("div.section_div");
+    // title
     CTML::Node kmerSectionTitle("div.subsection_title");
     CTML::Node kmerSectionTitleLink("a", subsection);
-    kmerSectionTitleLink.SetAttribute("title", "click to hide/show' onclick=showOrHide('" + divName + "')");
+    kmerSectionTitleLink.SetAttribute("title", "click to hide/show");
+    kmerSectionTitleLink.SetAttribute("onclick", "showOrHide('" + divName + "')");
     kmerSectionTitle.AppendChild(kmerSectionTitleLink);
     kmerSection.AppendChild(kmerSectionTitle);
+    // id
     CTML::Node kmerSectionID("div#" + divName);
     kmerSectionID.AppendChild(CTML::Node("div.sub_section_tips", "Darker background means larger counts. The count will be shown on mouse over"));
+    // table
     CTML::Node kmerSectionTable("table.kmer_table");
     kmerSectionTable.SetAttribute("style", "width:680px;");
     CTML::Node kmerSectionTableHeader("tr");
@@ -686,17 +691,21 @@ CTML::Node Stats::reportHtmlQuality(std::string filteringType, std::string readN
     json_str += "}};\n";
     json_str += "Plotly.newPlot('plot_" + divName + "', data, layout);\n";
     delete[] x;
-    
+   
+    // section title
     CTML::Node qualSection("div.section_div");
     CTML::Node qualSectionTitle("div.subsection_title");
     CTML::Node qualSectionTitleLink("a", subsection);
-    qualSectionTitleLink.SetAttribute("title", "click to hide/show' onclick=showOrHide('" + divName + "')");
+    qualSectionTitleLink.SetAttribute("title", "click to hide/show");
+    qualSectionTitleLink.SetAttribute("onclick", "showOrHide('" + divName + "')");
     qualSectionTitle.AppendChild(qualSectionTitleLink);
     qualSection.AppendChild(qualSectionTitle);
+    // section id
     CTML::Node qualSectionID("div#" + divName);
     qualSectionID.AppendChild(CTML::Node("div.sub_section_tips", "Value of each position will be shown on mouse over"));
     qualSectionID.AppendChild(CTML::Node("div.figure#plot_" + divName));
     qualSection.AppendChild(qualSectionID);
+    // section js
     CTML::Node qualJSC("script");
     qualJSC.SetAttribute("type", "text/javascript");
     qualJSC.AppendText(json_str);
@@ -711,16 +720,21 @@ CTML::Node Stats::reportHtmlContents(std::string filteringType, std::string read
     divName = util::replace(divName, ":", "_");
     std::string title = "";
 
+    // section 
     CTML::Node contentSection("div.section_div");
+    // title
     CTML::Node contentSectionTitle("div.subsection_title");
     CTML::Node contentSectionTitleClick("a", subsection);
-    contentSectionTitleClick.SetAttribute("title", "click to hide/show' onclick=showOrHide('" + divName + "')");
+    contentSectionTitleClick.SetAttribute("title", "click to hide/show");
+    contentSectionTitleClick.SetAttribute("onclick", "showOrHide('" + divName + "')");
     contentSectionTitle.AppendChild(contentSectionTitleClick);
     contentSection.AppendChild(contentSectionTitle);
+    // id
     CTML::Node contentSectionID("div#" + divName);
     contentSectionID.AppendChild(CTML::Node("div.sub_section_tips", "Value of each position will be shown on mouse over"));
     contentSectionID.AppendChild(CTML::Node("div.figure#plot_" + divName));
     contentSection.AppendChild(contentSectionID);
+    // js
     CTML::Node contentSectionJS("script");
     contentSectionJS.SetAttribute("type", "text/javascript");
 

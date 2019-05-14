@@ -94,6 +94,9 @@ int main(int argc, char** argv){
     // overrepresentation sequence analysis
     CLI::Option* pora = app.add_flag("--ora", opt->overRepAna.enabled, "enable ORA")->group("ORA");
     app.add_option("--ora_sample", opt->overRepAna.sampling, "ORA sampling steps", true)->check(CLI::Range(1, 10000))->needs(pora)->group("ORA");
+    // kmer
+    CLI::Option* pkmer = app.add_flag("--kmer", opt->kmer.enabled, "enable kmer analysis")->group("KMer");
+    app.add_option("--kmer_length", opt->kmer.kmerLen, "kmer length to analysis", true)->needs(pkmer)->group("KMer")->check(CLI::Range(4, 16));
     // reporting 
     app.add_option("-J", opt->jsonFile, "json format report file", true)->group("Report");
     app.add_option("-H", opt->htmlFile, "html format report file", true)->group("Report");;

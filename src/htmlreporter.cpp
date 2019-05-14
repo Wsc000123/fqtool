@@ -45,8 +45,8 @@ void HtmlReporter::report(FilterResult* result, Stats* preStats1, Stats* postSta
             preSectionID.AppendChild(v2[i]);
         }
     }
-    preSection.AppendChild(preSectionID);
     hReport.AppendNodeToBody(preSection);
+    hReport.AppendNodeToBody(preSectionID);
    
     CTML::Node postSection("div.section_div");
     CTML::Node postSectionTitle("div.section_title");
@@ -71,7 +71,7 @@ void HtmlReporter::report(FilterResult* result, Stats* preStats1, Stats* postSta
     postSection.AppendChild(postSectionID);
     hReport.AppendNodeToBody(postSection);
     CTML::Node footer("div#footer", "Fqtool Report @ " + htmlutil::getCurrentSystemTime());
-    ofs << hReport.ToString(CTML::StringFormatting::MULTIPLE_LINES);
+    ofs << hReport.ToString(CTML::StringFormatting::SINGLE_LINE);
     ofs.close();
 }
 
@@ -153,8 +153,8 @@ void HtmlReporter::printSummary(CTML::Document& d, FilterResult* fresult, Stats*
         }
     }
     generalID.AppendChild(generalTable);
-    generalSection.AppendChild(generalID);
     summaryID.AppendChild(generalSection);
+    summaryID.AppendChild(generalID);
     // summary->preFilter
     CTML::Node preFilterSection("div.subsection_title", "Before Filtering");
     preFilterSection.SetAttribute("onclick", "showOrHide('before_filtering_summary')");
@@ -170,8 +170,8 @@ void HtmlReporter::printSummary(CTML::Document& d, FilterResult* fresult, Stats*
         preFilterTable.AppendChild(htmlutil::make2ColRowNode("Read2 Mean Length", preRead2Length));
     }
     preFilterID.AppendChild(preFilterTable);
-    preFilterSection.AppendChild(preFilterID);
     summaryID.AppendChild(preFilterSection);
+    summaryID.AppendChild(preFilterID);
     // summary->afterFilter
     CTML::Node postFilterSection("div.subsection_title", "After filtering");
     postFilterSection.SetAttribute("onclick", "showOrHide('after_filtering_summary')");
@@ -187,18 +187,18 @@ void HtmlReporter::printSummary(CTML::Document& d, FilterResult* fresult, Stats*
         postFilterTable.AppendChild(htmlutil::make2ColRowNode("Read2 Mean Length", postRead2Length));
     }
     postFilterID.AppendChild(postFilterTable);
-    postFilterSection.AppendChild(postFilterID);
     summaryID.AppendChild(postFilterSection);
+    summaryID.AppendChild(postFilterID);
     // summary->filterresult
     CTML::Node filterResultSection("div.subsection_title", "Filtering Results");
     filterResultSection.SetAttribute("onclick", "showOrHide('filtering_result')");
     CTML::Node filterResultID("div#filtering_result");
     CTML::Node filterTable = fresult->reportHtmlBasic(preTotalBases, preTotalReads);
     filterResultID.AppendChild(filterTable);
-    filterResultSection.AppendChild(filterResultID);
     summaryID.AppendChild(filterResultSection);
-    summarySection.AppendChild(summaryID);
+    summaryID.AppendChild(filterResultID);
     d.AppendNodeToBody(summarySection);
+    d.AppendNodeToBody(summaryID);
     // adapters 
     if(mOptions->adapter.enableTriming){
         d.AppendNodeToBody(fresult->reportAdaptersHtmlSummary(preTotalBases));
@@ -275,8 +275,8 @@ CTML::Node HtmlReporter::reportDuplication(){
     CTML::Node dupSectionScript("script");
     dupSectionScript.SetAttribute("type", "text/javascript");
     dupSectionScript.AppendText(json_str);
-    dupSectionID.AppendChild(dupSectionScript);
     dupSection.AppendChild(dupSectionID);
+    dupSection.AppendChild(dupSectionScript);
     return dupSection;
 }
 
