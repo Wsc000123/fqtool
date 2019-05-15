@@ -188,6 +188,22 @@ void HtmlReporter::printSummary(CTML::Document& d, FilterResult* fresult, Stats*
     if(mOptions->isPaired()){
         preFilterTable.AppendChild(htmlutil::make2ColRowNode("Read2 Mean Length", preRead2Length));
     }
+    if(mOptions->adapter.enableTriming){
+        size_t readWithAdapter = 0;
+        for(auto& e: fresult->mAdapter1Count){
+            readWithAdapter += e.second;
+        }
+        double readWithAdapterRate = mOptions->isPaired() ? readWithAdapter * 1.0 / preTotalReads * 2 : readWithAdapter * 1.0 / preTotalReads;
+        preFilterTable.AppendChild(htmlutil::make2ColRowNode("Read1 Adapters Left", std::to_string(readWithAdapter) + "(" + std::to_string(readWithAdapterRate * 100) + "%)"));
+        if(mOptions->isPaired()){
+            readWithAdapter = 0;
+            for(auto& e: fresult->mAdapter2Count){
+                readWithAdapter += e.second;
+            }
+            readWithAdapterRate = mOptions->isPaired() ? readWithAdapter * 1.0 / preTotalReads * 2 : readWithAdapter * 1.0 / preTotalReads;
+            preFilterTable.AppendChild(htmlutil::make2ColRowNode("Read2 Adapters Left", std::to_string(readWithAdapter) + "(" + std::to_string(readWithAdapterRate * 100) + "%)"));
+        }
+    }
     preFilterID.AppendChild(preFilterTable);
     summaryID.AppendChild(preFilterSection);
     summaryID.AppendChild(preFilterID);

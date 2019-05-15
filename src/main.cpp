@@ -30,8 +30,8 @@ int main(int argc, char** argv){
     app.add_flag("--in_fq_interleaved", opt->interleavedInput, "input fastq interleaved")->excludes(pin2)->group("IO");
     // duplication
     CLI::Option* pdupana = app.add_flag("-d", opt->duplicate.enabled, "enable duplication analysis")->group("Duplication");
-    app.add_option("--dup_ana_key_len", opt->duplicate.keylen, "duplication analysis key length")->check(CLI::Range(12, 31))->needs(pdupana)->group("Duplication");
-    app.add_option("--dup_ana_hist_size", opt->duplicate.histSize, "duplicate analysis hist size")->check(CLI::Range(1, 10000))->needs(pdupana)->group("Duplication");
+    app.add_option("--dup_ana_key_len", opt->duplicate.keylen, "duplication analysis key length", true)->check(CLI::Range(12, 31))->needs(pdupana)->group("Duplication");
+    app.add_option("--dup_ana_hist_size", opt->duplicate.histSize, "duplicate analysis hist size", true)->check(CLI::Range(1, 10000))->needs(pdupana)->group("Duplication");
     // adapter
     CLI::Option* pcutadapter = app.add_flag("-a", opt->adapter.enableTriming, "enable adapter trimming")->group("Adapter");
     app.add_option("--adapter_of_read1", opt->adapter.inputAdapterSeqR1, "adapter of read1")->needs(pcutadapter)->group("Adapter");

@@ -16,9 +16,11 @@ namespace htmlutil{
      */
     template<typename T>
     inline CTML::Node make2ColRowNode(const std::string& key, T val){
+        std::stringstream ss;
+        ss << val;
         CTML::Node row("tr");
         row.AppendChild(CTML::Node("td.col1", key));
-        row.AppendChild(CTML::Node("td.col2", std::to_string(val)));
+        row.AppendChild(CTML::Node("td.col2", ss.str()));
         return row;
     }
 
