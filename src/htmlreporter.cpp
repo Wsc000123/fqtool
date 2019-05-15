@@ -70,7 +70,26 @@ void HtmlReporter::report(FilterResult* result, Stats* preStats1, Stats* postSta
     }
     postSection.AppendChild(postSectionID);
     hReport.AppendNodeToBody(postSection);
+    // software
+    CTML::Node softwareSection("div#section_div");
+    CTML::Node softwareSectionTitle("div.section_title");
+    softwareSection.SetAttribute("onclick", "showOrHide('software')");
+    CTML::Node softwareSectionTitleLink("a", "Software Environment");
+    softwareSectionTitleLink.SetAttribute("name", "summary");
+    softwareSectionTitle.AppendChild(softwareSectionTitleLink);
+    softwareSection.AppendChild(softwareSectionTitle);
+    CTML::Node softwareSectionID("div#software");
+    CTML::Node softwareSectionTable("table.summary_table");
+    softwareSectionTable.AppendChild(htmlutil::make2ColRowNode("Version", mOptions->version));
+    softwareSectionTable.AppendChild(htmlutil::make2ColRowNode("Command", mOptions->command));
+    softwareSectionTable.AppendChild(htmlutil::make2ColRowNode("CWD", mOptions->cwd));
+    softwareSectionID.AppendChild(softwareSectionTable);
+    hReport.AppendNodeToBody(softwareSection);
+    hReport.AppendNodeToBody(softwareSectionID);
+    // footer
     CTML::Node footer("div#footer", "Fqtool Report @ " + htmlutil::getCurrentSystemTime());
+    hReport.AppendNodeToBody(footer);
+    // write to file
     ofs << hReport.ToString(CTML::StringFormatting::SINGLE_LINE);
     ofs.close();
 }

@@ -342,12 +342,17 @@ struct Options{
     MergePEReadsOptions mergePE;                       ///< MergePEReadsOptions object
     BufferSizeOptions bufSize;                         ///< BufferSizeOptions object
     std::mutex logmtx;                                 ///< mutex for logging
+    std::string command;                               ///< command executed
+    std::string cwd;                                   ///< current working directory
     
     /** Construct a Options object */
     Options();
     
-    /** update options */
-    void update();
+    /** update options
+     * @param argc number of arguments to main
+     * @param argv argument arrays to main
+     */
+    void update(int argc, char** argv);
 
     /** valid options */
     void validate();

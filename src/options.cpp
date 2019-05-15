@@ -21,7 +21,7 @@ Options::Options(){
     htmlFile = "report.html";
 }
 
-void Options::update(){
+void Options::update(int argc, char** argv){
     // update adapter cutting options
     adapter.adapterSeqR1Provided = adapter.inputAdapterSeqR1.empty() ? false : true;
     adapter.adapterSeqR2Provided = adapter.inputAdapterSeqR2.empty() ? false : true;
@@ -44,6 +44,13 @@ void Options::update(){
     if(umi.enabled && (umi.location == 3 || umi.location == 4 || umi.location == 6) && umi.length == 0){
         util::error_exit("umi length can not be zero if it's in read1/2");
     }
+    // update command
+    for(int i = 0; i < argc; ++i){
+        command.append(argv[i]);
+        command.append(" ");
+    }
+    // update cwd
+    cwd = util::cwd();
 }
 
 void Options::validate(){

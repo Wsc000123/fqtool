@@ -115,7 +115,7 @@ int main(int argc, char** argv){
     // parse args
     CLI_PARSE(app, argc, argv);
     // update options
-    opt->update();
+    opt->update(argc, argv);
     // validate options
     opt->validate();
     // evaluate read length

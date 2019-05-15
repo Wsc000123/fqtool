@@ -150,6 +150,13 @@ void JsonReporter::report(FilterResult* fresult, Stats* preStats1, Stats* postSt
     if(postStats2 && !mOptions->mergePE.enabled){
         jReport["Read2AfterFiltering"] = postStats2->reportJson();
     }
+    // software env
+    jsn::json jSoftware;
+    jSoftware["CWD"] = mOptions->cwd;
+    jSoftware["Command"] = mOptions->command;
+    jSoftware["Version"] = mOptions->version;
+    jReport["Software"] = jSoftware;
+    // write to file
     ofs << jReport.dump(4);
     ofs.close();
 }
