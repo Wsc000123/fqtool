@@ -212,6 +212,7 @@ bool PairEndProcessor::process(){
     jr.setInsertHist(mInsertSizeHist, peakInsertSize);
     jr.report(finalFilterResult,finalPreStats1, finalPostStats1, finalPreStats2, finalPostStats2);
     HtmlReporter hr(mOptions);
+    hr.setInsertHist(mInsertSizeHist, peakInsertSize);
     hr.setDupHist(dupHist, dupMeanGC, dupRate);
     hr.report(finalFilterResult,finalPreStats1, finalPostStats1, finalPreStats2, finalPostStats2);
     util::loginfo("finish generating reports", mOptions->logmtx);
