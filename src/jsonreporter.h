@@ -5,7 +5,7 @@
 #include <array>
 #include <fstream>
 #include <string>
-#include <json.hpp>
+#include "json.hpp"
 #include "stats.h"
 #include "options.h"
 #include "filterresult.h"
