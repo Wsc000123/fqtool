@@ -26,7 +26,7 @@ int main(int argc, char** argv){
     app.add_flag("--discard_unmerged", opt->mergePE.discardUnmerged, "discard unmerged reads")->needs(pmerge)->group("Merge");
     app.add_option("--merge_output", opt->mergePE.out, "merged output")->needs(pmerge)->group("Merge");
     app.add_flag("--phred64", opt->phred64, "input fastq is phred64")->group("IO");
-    app.add_option("-z", opt->compression, "gzip output compress level")->check(CLI::Range(1, 9))->group("IO");
+    app.add_option("-z", opt->compression, "gzip output compress level", true)->check(CLI::Range(1, 9))->group("IO");
     app.add_flag("--in_fq_interleaved", opt->interleavedInput, "input fastq interleaved")->excludes(pin2)->group("IO");
     // duplication
     CLI::Option* pdupana = app.add_flag("-d", opt->duplicate.enabled, "enable duplication analysis")->group("Duplication");
