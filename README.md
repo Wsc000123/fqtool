@@ -120,7 +120,7 @@ Installation
 `/path/to/install/dir/bin/fqtool`  
 
 4. test   
-`fqtool -i ./testdata/r1.fq.gz -I ./testdata/r2.fq.gz -o r1.out.fq.gz -q --kmer --kmer_length 6 -d -a --detect_pe_adapter -O r2.out.fq.gz > run.log 2>&1` 
+`fqtool -i ./testdata/r1.fq.gz -I ./testdata/r2.fq.gz -o r1.out.fq.gz -O r2.out.fq.gz-q --kmer --kmer_length 6 -d -a --detect_pe_adapter > run.log 2>&1` 
 
 PS  
 fqtool is modified from [fastp](https://github.com/OpenGene/fastp) with many enchancements, mainly listed below 
