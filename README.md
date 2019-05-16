@@ -124,8 +124,9 @@ Installation
 
 PS  
 fqtool is modified from [fastp](https://github.com/OpenGene/fastp) with many enchancements, mainly listed below 
-1. ringbuffer fixed, so fqtool will not crash with too many reads in input fastq
-2. use json.hpp and ctml.hpp to write json and html respectly for better code style 
+1. all ringbuffer are fixed and are real ring now, so fqtool will not crash with too many reads in input fastq
+2. use json.hpp and ctml.hpp to write json and html respectly for further customized development with ease 
 3. kmer analysis is disabled by default, and the kmer length used for analysis can be set 
-4. buffer size arguments are externalized as well
+4. buffer size arguments are externalized as well  
 5. umi use standardized OX:Z tag and umi quality use standarzied BZ:Z to append as comments after readnames  
+6. fastq readnumber estimation and overlap analysis fixedup  
