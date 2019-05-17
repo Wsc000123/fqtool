@@ -183,7 +183,7 @@ void HtmlReporter::printSummary(CTML::Document& d, FilterResult* fresult, Stats*
     preFilterTable.AppendChild(htmlutil::make2ColRowNode("Total Bases", preTotalBases));
     preFilterTable.AppendChild(htmlutil::make2ColRowNode("Q20 Bases", std::to_string(preQ20Bases) + "(" + std::to_string(preQ20Rate * 100) + "%)"));
     preFilterTable.AppendChild(htmlutil::make2ColRowNode("Q30 Bases", std::to_string(preQ30Bases) + "(" + std::to_string(preQ30Rate * 100) + "%)"));
-    preFilterTable.AppendChild(htmlutil::make2ColRowNode("GC Content", preGCRate));
+    preFilterTable.AppendChild(htmlutil::make2ColRowNode("GC Content", std::to_string(preGCRate * 100) + "%"));
     preFilterTable.AppendChild(htmlutil::make2ColRowNode("Read1 Mean Length", preRead1Length));
     if(mOptions->isPaired()){
         preFilterTable.AppendChild(htmlutil::make2ColRowNode("Read2 Mean Length", preRead2Length));
@@ -216,7 +216,7 @@ void HtmlReporter::printSummary(CTML::Document& d, FilterResult* fresult, Stats*
     postFilterTable.AppendChild(htmlutil::make2ColRowNode("Total Bases", postTotalBases));
     postFilterTable.AppendChild(htmlutil::make2ColRowNode("Q20 Bases", std::to_string(postQ20Bases) + "(" + std::to_string(postQ20Rate * 100) + "%)"));
     postFilterTable.AppendChild(htmlutil::make2ColRowNode("Q30 Bases", std::to_string(postQ30Bases) + "(" + std::to_string(postQ30Rate * 100) + "%)"));
-    postFilterTable.AppendChild(htmlutil::make2ColRowNode("GC Content", postGCRate));
+    postFilterTable.AppendChild(htmlutil::make2ColRowNode("GC Content", std::to_string(100 * postGCRate) + "%"));
     postFilterTable.AppendChild(htmlutil::make2ColRowNode("Read1 Mean Length", postRead1Length));
     if(mOptions->isPaired()){
         postFilterTable.AppendChild(htmlutil::make2ColRowNode("Read2 Mean Length", postRead2Length));

@@ -294,7 +294,7 @@ CTML::Node FilterResult::reportAdaptersHtmlDetails(std::map<std::string, size_t>
         }
         CTML::Node row("tr");
         row.AppendChild(CTML::Node("td.adapter_col", e.first));
-        row.AppendChild(CTML::Node("td.col2", std::to_string(e.second)));
+        row.AppendChild(CTML::Node("td.col2", std::to_string(e.second) + "(" + std::to_string(e.second*100.0/dTotalAdapters) + "%)"));
         table.AppendChild(row);
         reported += e.second;
     }
@@ -304,7 +304,7 @@ CTML::Node FilterResult::reportAdaptersHtmlDetails(std::map<std::string, size_t>
         if(reported == 0){
             tag = "all adapter sequences";
         }
-        table.AppendChild(htmlutil::make2ColRowNode(tag, unreported));
+        table.AppendChild(htmlutil::make2ColRowNode(tag, std::to_string(unreported) + "(" + std::to_string(unreported*100.0/dTotalAdapters) + "%)"));
     }
     return table;
 }
