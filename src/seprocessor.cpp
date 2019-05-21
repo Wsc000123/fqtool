@@ -314,7 +314,7 @@ void SingleEndProcessor::processSingleEnd(ReadPack* pack, ThreadConfig *config){
         // polyG trimming
         if(r1 != NULL){
             if(mOptions->polyGTrim.enabled){
-                PolyX::trimPolyG(r1, mOptions->polyGTrim.minLen, config->getFilterResult());
+                PolyX::trimPolyG(r1, mOptions->polyGTrim.minLen, mOptions->polyGTrim.maxMismatch, mOptions->polyGTrim.allowedOneMismatchForEach, config->getFilterResult());
             }
         }
         // adapter trimming
@@ -324,7 +324,8 @@ void SingleEndProcessor::processSingleEnd(ReadPack* pack, ThreadConfig *config){
         // polyX trimming
         if(r1 != NULL){
             if(mOptions->polyXTrim.enabled){
-                PolyX::trimPolyX(r1, mOptions->polyXTrim.minLen, config->getFilterResult());
+                PolyX::trimPolyX(r1, mOptions->polyXTrim.trimChr, mOptions->polyXTrim.minLen, 
+                                 mOptions->polyXTrim.maxMismatch, mOptions->polyXTrim.allowedOneMismatchForEach, config->getFilterResult());
             }
         }
         // trim max length

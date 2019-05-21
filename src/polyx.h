@@ -23,7 +23,7 @@ class PolyX{
          * @param compareReq required length of sequence to be polyG
          * @param fr pointer to FilterResult object
          */
-        static void trimPolyG(Read* r1, Read* r2, int compareReq, FilterResult* fr = NULL);
+        static void trimPolyG(Read* r1, Read* r2, int compareReq, int maxMismatch, int allowedOneMismatchForEach, FilterResult* fr = NULL);
         
         /** trim polyG from 3' end\n
          * if at most 5 mismatch in length l, and l >= compareReq, trim it
@@ -32,7 +32,7 @@ class PolyX{
          * @param compareReq required length of sequence to be polyG
          * @param fr pointer to FilterResult object
          */
-        static void trimPolyG(Read* r, int compareReq, FilterResult* fr = NULL);
+        static void trimPolyG(Read* r, int compareReq, int maxMismatch, int allowedOneMismatchForEach, FilterResult* fr = NULL);
         
         /** trim polyX from 3' end\n
          * if at most 5 mismatch in length l, and l >= compareReq, trim it
@@ -42,7 +42,7 @@ class PolyX{
          * @param compareReq required length of sequence to be polyG
          * @param fr pointer to FilterResult object
          */
-        static void trimPolyX(Read* r1, Read* r2, int compareReq, FilterResult* fr = NULL);
+        static void trimPolyX(Read* r1, Read* r2, std::string trimChr,  int compareReq, int maxMismatch, int allowedOneMismatchForEach, FilterResult* fr = NULL);
 
         /** trim polyX from 3' end\n
          * if at most 5 mismatch in length l, and l >= compareReq, trim it
@@ -51,7 +51,7 @@ class PolyX{
          * @param compareReq required length of sequence to be polyG
          * @param fr pointer to FilterResult object
          */
-        static void trimPolyX(Read* r, int compareReq, FilterResult* fr = NULL);
+        static void trimPolyX(Read* r, std::string trimChr, int compareReq, int maxMismatch, int allowedOneMismatchForEach, FilterResult* fr = NULL);
 };
 
 #endif

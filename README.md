@@ -40,8 +40,13 @@ Usage: fqtool [OPTIONS]
 |PolyX:
 |  -g                                                                          |  enable polyG trim
 |  --min_len_detect_polyG INT=10 Needs: -g                                     |  minimum length to detect polyG
+|  --max_mismatches_polyG INT=1 Needs: -g                                      |  maximum mismatches allowed for matched polyG
+|  --one_mismatch_each_polyG INT=10 Needs: -g                                  |  allowed one mismatch every bases for matched polyG
 |  -x                                                                          |  enable polyX trim
-|  --min_len_detect_polyX INT=10 Needs: -x                                     |  minimum length to detect polyG
+|  --base_to_trim TEXT=ATCGN Needs: -x                                         |  nucleotides to trim
+|  --min_len_detect_polyX INT=10 Needs: -x                                     |  minimum length to detect polyX
+|  --max_mismatches_polyX INT=1 Needs: -x                                      |  maximum mismatches allowed for matched polyX
+|  --one_mismatch_each_polyX INT=10 Needs: -x                                  |  allowed one mismatch every bases for matched polyX
 |Cut:
 |  --enable_cut_front                                                          |  slide and drop from 5'->3'
 |  --enable_cut_tail                                                           |  slide and drop from 3'->5'

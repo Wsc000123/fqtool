@@ -47,9 +47,15 @@ int main(int argc, char** argv){
     // polyG tail trimming
     CLI::Option* ptrimG = app.add_flag("-g", opt->polyGTrim.enabled, "enable polyG trim")->group("PolyX");
     app.add_option("--min_len_detect_polyG", opt->polyGTrim.minLen, "minimum length to detect polyG", true)->needs(ptrimG)->group("PolyX");
+    app.add_option("--max_mismatches_polyG", opt->polyGTrim.maxMismatch, "maximum mismatches allowed for matched polyG", true)->needs(ptrimG)->group("PolyX");
+    app.add_option("--one_mismatch_each_polyG", opt->polyGTrim.allowedOneMismatchForEach, "allowed one mismatch every bases for matched polyG", true)->needs(ptrimG)->group("PolyX");
     // polyX tail trimming
     CLI::Option* ptrimX = app.add_flag("-x", opt->polyXTrim.enabled, "enable polyX trim")->group("PolyX");
-    app.add_option("--min_len_detect_polyX", opt->polyXTrim.minLen, "minimum length to detect polyG", true)->needs(ptrimX)->group("PolyX");
+    app.add_option("--base_to_trim", opt->polyXTrim.trimChr, "nucleotides to trim", true)->needs(ptrimX)->group("PolyX");
+    app.add_option("--min_len_detect_polyX", opt->polyXTrim.minLen, "minimum length to detect polyX", true)->needs(ptrimX)->group("PolyX");
+    app.add_option("--max_mismatches_polyX", opt->polyXTrim.maxMismatch, "maximum mismatches allowed for matched polyX", true)->needs(ptrimX)->group("PolyX");
+    app.add_option("--one_mismatch_each_polyX", opt->polyXTrim.allowedOneMismatchForEach, "allowed one mismatch every bases for matched polyX", true)->needs(ptrimX)->group("PolyX");
+
     // cutting by quality
     CLI::Option* pcutfront = app.add_flag("--enable_cut_front", opt->qualitycut.enableFront, "slide and drop from 5'->3'")->group("Cut");
     CLI::Option* pcuttail = app.add_flag("--enable_cut_tail", opt->qualitycut.enableTail, "slide and drop from 3'->5'")->group("Cut");

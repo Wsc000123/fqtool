@@ -46,6 +46,8 @@ void Options::update(int argc, char** argv){
     if(umi.enabled && (umi.location == 3 || umi.location == 4 || umi.location == 6) && umi.length == 0){
         util::error_exit("umi length can not be zero if it's in read1/2");
     }
+    // update polyx
+    util::str2upper(polyXTrim.trimChr);
     // update command
     for(int i = 0; i < argc; ++i){
         command.append(argv[i]);
@@ -56,10 +58,15 @@ void Options::update(int argc, char** argv){
 }
 
 void Options::validate(){
+    // validate merged file
     if(mergePE.enabled){
         if(mergePE.out.empty()){
             util::error_exit("merged file output must be provided!");
         }
+    }
+    // validate polyX
+    if(polyXTrim.trimChr.find_first_not_of("ATCGN") != std::string::npos){
+        util::error_exit("Can only trim nucleotides ATCGN");
     }
 }
 

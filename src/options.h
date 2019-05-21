@@ -39,21 +39,31 @@ struct MergePEReadsOptions{
 struct PolyGTrimmerOptions{
     bool enabled;       ///< enable PolyG trimming
     int minLen;         ///< minimum length needed to compare to get a proper polyG tail(total mismatch < 5 || each8basemismatches <= 1)
+    int maxMismatch;    ///< max mismatches allowed during scan for polyG
+    int allowedOneMismatchForEach;///< max mismatches allwed for each allowedOneMismatchForEach bases during Scaning for polyG
     /** construct a PolyGTrimmerOptions and set default values */
     PolyGTrimmerOptions(){
         enabled = false;
         minLen = 10;
+        maxMismatch = 1;
+        allowedOneMismatchForEach = 10;
     }
 };
 
 /** struct to store PolyX trimming options */
 struct PolyXTrimmerOptions{
     bool enabled;       ///< enable PolyX trimming
+    std::string trimChr; ///< nucleotides to be trimmed
     int minLen;         ///< minimum length needed to compare to get a proper polyX tail(total mismatch < 5 || each8basemismatches <= 1)
+    int maxMismatch;    ///< max mismatches allowed during scan for polyG
+    int allowedOneMismatchForEach;///< max mismatches allwed for each allowedOneMismatchForEach bases during Scaning for polyG
     /** construct a PolyXTrimmerOptions and set default values */
     PolyXTrimmerOptions(){    
         enabled = false;
+        trimChr = "ATCGN";
         minLen = 10;
+        maxMismatch = 1;
+        allowedOneMismatchForEach = 10;
     }
 };
 
