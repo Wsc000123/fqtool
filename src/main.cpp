@@ -64,7 +64,7 @@ int main(int argc, char** argv){
     app.add_option("--cut_right_mean_qual", opt->qualitycut.qualityRight, "mean quality to cut right", true)->check(CLI::Range(1, 36))->needs(pcuttail)->group("Cut");
     // quality filtering
     CLI::Option* pqfilter = app.add_flag("-q", opt->qualFilter.enabled, "enable quality filter")->group("Qual");
-    app.add_option("-Q", opt->qualFilter.lowQualityLimit, "minimum ASCII Quality for qualified bases,", true)->needs(pqfilter)->check(CLI::Range(33, 75))->group("Qual");
+    app.add_option("-Q", opt->qualFilter.lowQualityLimit, "minimum quality for qualified bases", true)->needs(pqfilter)->check(CLI::Range(0, 60))->group("Qual");
     app.add_option("-U", opt->qualFilter.lowQualityRatio, "maximum low quality ratio allowed in one read", true)->check(CLI::Range(0, 1))->needs(pqfilter)->group("Qual");
     app.add_option("-N", opt->qualFilter.nBaseLimit, "maximum N bases allowed in one read", true)->needs(pqfilter)->group("Qual");
     app.add_option("-e", opt->qualFilter.averageQualityLimit, "average quality needed for one read")->needs(pqfilter)->group("Qual");

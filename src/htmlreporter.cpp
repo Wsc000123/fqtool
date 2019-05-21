@@ -238,6 +238,9 @@ void HtmlReporter::printSummary(CTML::Document& d, FilterResult* fresult, Stats*
     if(mOptions->adapter.enableTriming){
         d.AppendNodeToBody(fresult->reportAdaptersHtmlSummary(preTotalBases));
     }
+    if(mOptions->polyGTrim.enabled || mOptions->polyXTrim.enabled){
+        d.AppendNodeToBody(fresult->reportPolyXTrimHtml());
+    }
     // duplication
     if(mOptions->duplicate.enabled){
         d.AppendNodeToBody(reportDuplication());

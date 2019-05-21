@@ -171,6 +171,11 @@ class FilterResult{
          * @param j reference of json object
          */
         void reportPolyXTrimJson(jsn::json& j);
+
+        /** report polyx trimming statistics in html
+         * @return polyx trimming statistics Node
+         */
+        CTML::Node reportPolyXTrimHtml();
 };
 
 #endif

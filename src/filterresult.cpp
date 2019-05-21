@@ -356,18 +356,42 @@ CTML::Node FilterResult::reportAdaptersHtmlSummary(size_t totalBases){
     return adapterSection;
 }
 
+CTML::Node FilterResult::reportPolyXTrimHtml(){
+    CTML::Node polyXSection("div.section_div");
+    CTML::Node polyXSectionTitle("div.section_title", "PolyX Trimming");
+    polyXSectionTitle.SetAttribute("onclick", "showOrHide('polyx')");
+    CTML::Node polyXSectionTitleLink("a");
+    polyXSectionTitleLink.SetAttribute("name", "summary");
+    polyXSectionTitle.AppendChild(polyXSectionTitleLink);
+    polyXSection.AppendChild(polyXSectionTitle);
+    CTML::Node polyXID("div#polyx");
+    CTML::Node polyXTable("table.summary_table");
+    polyXTable.AppendChild(htmlutil::make2ColRowNode("TotalPolyXTrimmedReads", std::accumulate(mTrimmedPolyXReads, mTrimmedPolyXReads + 4, 0)));
+    polyXTable.AppendChild(htmlutil::make2ColRowNode("TotalPolyXTrimmedBases", std::accumulate(mTrimmedPolyXBases, mTrimmedPolyXBases + 4, 0)));
+    std::string nc = "ATCG";
+    for(int b = 0; b < 4; ++b){
+        polyXTable.AppendChild(htmlutil::make2ColRowNode("ReadsTrimmedByPoly" + std::string(1, nc[b]), mTrimmedPolyXReads[b]));
+    }
+    for(int b = 0; b < 4; ++b){
+        polyXTable.AppendChild(htmlutil::make2ColRowNode("BasesTrimmedByPoly" + std::string(1, nc[b]), mTrimmedPolyXBases[b]));
+    }
+    polyXID.AppendChild(polyXTable);
+    polyXSection.AppendChild(polyXID);
+    return polyXSection;
+}
+
 void FilterResult::reportPolyXTrimJson(jsn::json& j){
     const char atcg[4] = {'A', 'T', 'C', 'G'};
     j["TotalPolyxTrimmedReads"] = std::accumulate(mTrimmedPolyXReads, mTrimmedPolyXReads + 4, 0);
     jsn::json jPolyReads;
     for(int b = 0; b < 4; ++b){
-        jPolyReads[atcg[b]] = mTrimmedPolyXReads[b];
+        jPolyReads[std::string(1, atcg[b])] = mTrimmedPolyXReads[b];
     }
     j["PolyxTrimmedReads"] = jPolyReads;
     j["TotalPolyxTrimmedBases"] = std::accumulate(mTrimmedPolyXBases, mTrimmedPolyXBases + 4, 0);
     jsn::json jPolyBases;
     for(int b = 0; b < 4; ++b){
-        jPolyBases[atcg[b]] = mTrimmedPolyXBases[b];
+        jPolyBases[std::string(1, atcg[b])] = mTrimmedPolyXBases[b];
     }
     j["PolyxTrimmedBases"] = jPolyBases;
 }

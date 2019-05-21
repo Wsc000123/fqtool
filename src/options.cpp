@@ -22,6 +22,8 @@ Options::Options(){
 }
 
 void Options::update(int argc, char** argv){
+    // convert to internal Phred33 based quality score for performance
+    qualFilter.lowQualityLimit = qualFilter.lowQualityLimit + 33;
     // update adapter cutting options
     adapter.adapterSeqR1Provided = adapter.inputAdapterSeqR1.empty() ? false : true;
     adapter.adapterSeqR2Provided = adapter.inputAdapterSeqR2.empty() ? false : true;

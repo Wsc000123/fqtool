@@ -294,7 +294,7 @@ bool PairEndProcessor::processPairEnd(ReadPairPack* pack, ThreadConfig* config){
         // trim polyG if enabled
         if(r1 && r2){
             if(mOptions->polyGTrim.enabled){
-                PolyX::trimPolyG(r1, r2, mOptions->polyGTrim.minLen);
+                PolyX::trimPolyG(r1, r2, mOptions->polyGTrim.minLen, config->getFilterResult());
             }
         }
         // do insertsize statistics only in thread 0, do adapter trimming and base correction if enabled
@@ -334,7 +334,7 @@ bool PairEndProcessor::processPairEnd(ReadPairPack* pack, ThreadConfig* config){
         // trim polyX if enabled
         if(r1 && r2){
             if(mOptions->polyXTrim.enabled){
-                PolyX::trimPolyX(r1, r2, mOptions->polyXTrim.minLen);
+                PolyX::trimPolyX(r1, r2, mOptions->polyXTrim.minLen, config->getFilterResult());
             }
         }
         // trim too long read if enabled

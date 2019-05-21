@@ -186,7 +186,7 @@ struct ReadLengthFilterOptions{
 /** struct to store quality filter options */
 struct QualityFilterOptions{
     bool enabled;               ///< quality filter enabled if true
-    char lowQualityLimit;       ///< if a base's quality < lowQualityLimit, hen it's considered as a low quality base
+    int lowQualityLimit;        ///< if a base's quality < lowQualityLimit, hen it's considered as a low quality base
     int lowQualityBaseLimit;    ///< if low quality bases number > lowQualityBaseLimit, then discard this read
     int nBaseLimit;             ///< if N bases number > nBaseLimit, then discard this read
     double lowQualityRatio;     ///< if a read has bases with quality < lowQualityLimit more than this ratio, it will be dropped
@@ -194,11 +194,10 @@ struct QualityFilterOptions{
     /** construct a QualityFilterOptions object and set default values */
     QualityFilterOptions(){
         enabled = true;
-        // '0' == Q15
-        lowQualityLimit = 48;
+        lowQualityLimit = 20;
         lowQualityBaseLimit = 40;
         nBaseLimit = 5;
-        lowQualityRatio = 0.30;
+        lowQualityRatio = 0.15;
         averageQualityLimit = 0.0;
     }
 };
