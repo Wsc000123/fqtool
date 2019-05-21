@@ -5,8 +5,8 @@ FilterResult::FilterResult(Options* opt, bool paired){
     mPaired = paired;
     mTrimmedAdapterBases = 0;
     mTrimmedAdapterReads = 0;
-    mTrimmedPolyXBases = (size_t*)std::calloc(4, sizeof(size_t));
-    mTrimmedPolyXReads = (size_t*)std::calloc(4, sizeof(size_t));
+    mTrimmedPolyXBases = (size_t*)std::calloc(5, sizeof(size_t));
+    mTrimmedPolyXReads = (size_t*)std::calloc(5, sizeof(size_t));
     for(int i = 0; i < COMMONCONST::FILTER_RESULT_TYPES; ++i){
         mFilterReadStats[i] = 0;
     }
@@ -366,13 +366,13 @@ CTML::Node FilterResult::reportPolyXTrimHtml(){
     polyXSection.AppendChild(polyXSectionTitle);
     CTML::Node polyXID("div#polyx");
     CTML::Node polyXTable("table.summary_table");
-    polyXTable.AppendChild(htmlutil::make2ColRowNode("TotalPolyXTrimmedReads", std::accumulate(mTrimmedPolyXReads, mTrimmedPolyXReads + 4, 0)));
-    polyXTable.AppendChild(htmlutil::make2ColRowNode("TotalPolyXTrimmedBases", std::accumulate(mTrimmedPolyXBases, mTrimmedPolyXBases + 4, 0)));
-    std::string nc = "ATCG";
-    for(int b = 0; b < 4; ++b){
+    polyXTable.AppendChild(htmlutil::make2ColRowNode("TotalPolyXTrimmedReads", std::accumulate(mTrimmedPolyXReads, mTrimmedPolyXReads + 5, 0)));
+    polyXTable.AppendChild(htmlutil::make2ColRowNode("TotalPolyXTrimmedBases", std::accumulate(mTrimmedPolyXBases, mTrimmedPolyXBases + 5, 0)));
+    std::string nc = "ATCGN";
+    for(int b = 0; b < 5; ++b){
         polyXTable.AppendChild(htmlutil::make2ColRowNode("ReadsTrimmedByPoly" + std::string(1, nc[b]), mTrimmedPolyXReads[b]));
     }
-    for(int b = 0; b < 4; ++b){
+    for(int b = 0; b < 5; ++b){
         polyXTable.AppendChild(htmlutil::make2ColRowNode("BasesTrimmedByPoly" + std::string(1, nc[b]), mTrimmedPolyXBases[b]));
     }
     polyXID.AppendChild(polyXTable);
@@ -381,16 +381,16 @@ CTML::Node FilterResult::reportPolyXTrimHtml(){
 }
 
 void FilterResult::reportPolyXTrimJson(jsn::json& j){
-    const char atcg[4] = {'A', 'T', 'C', 'G'};
-    j["TotalPolyxTrimmedReads"] = std::accumulate(mTrimmedPolyXReads, mTrimmedPolyXReads + 4, 0);
+    const char atcg[5] = {'A', 'T', 'C', 'G', 'N'};
+    j["TotalPolyxTrimmedReads"] = std::accumulate(mTrimmedPolyXReads, mTrimmedPolyXReads + 5, 0);
     jsn::json jPolyReads;
-    for(int b = 0; b < 4; ++b){
+    for(int b = 0; b < 5; ++b){
         jPolyReads[std::string(1, atcg[b])] = mTrimmedPolyXReads[b];
     }
     j["PolyxTrimmedReads"] = jPolyReads;
-    j["TotalPolyxTrimmedBases"] = std::accumulate(mTrimmedPolyXBases, mTrimmedPolyXBases + 4, 0);
+    j["TotalPolyxTrimmedBases"] = std::accumulate(mTrimmedPolyXBases, mTrimmedPolyXBases + 5, 0);
     jsn::json jPolyBases;
-    for(int b = 0; b < 4; ++b){
+    for(int b = 0; b < 5; ++b){
         jPolyBases[std::string(1, atcg[b])] = mTrimmedPolyXBases[b];
     }
     j["PolyxTrimmedBases"] = jPolyBases;

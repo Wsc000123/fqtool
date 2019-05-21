@@ -19,18 +19,19 @@ void PolyX::trimPolyG(Read* r, int compareReq, FilterResult* fr){
     int mismatch = 0;
     int i = 0;
     int firstGpos = rlen - 1;
-    for(int i = 0; i < rlen; ++i){
+    for(i = 0; i < rlen; ++i){
         if(data[rlen - i - 1] != 'G'){
             ++mismatch;
         }else{
             firstGpos = rlen - i - 1;
         }
-        int allowedMismatch = (i + 1)/allowedOneMismatchForEach;
-        if(mismatch > maxMismatch || (mismatch > allowedMismatch && i >= compareReq - 1)){
+        int allowedMismatch = std::min(maxMismatch, std::max(1, (i+1)/allowedOneMismatchForEach));
+        if(mismatch > allowedMismatch){
             break;
         }
     }
-    if(i >= compareReq){
+    if(i + 1 >= compareReq){
+        std::cerr << r->name << ":\n" << r->seq.seqStr << "\n" << r->seq.seqStr.substr(firstGpos) << std::endl << std::endl;
         r->resize(firstGpos);
         if(fr){
             fr->addPolyXTrimmed(3, rlen - firstGpos);
@@ -49,8 +50,8 @@ void PolyX::trimPolyX(Read* r, int compareReq, FilterResult* fr){
     const int maxMismatch = 5;
     const char* data = r->seq.seqStr.c_str();
     int rlen = r->length();
-    int atcgNumbers[4] = {0, 0, 0, 0};
-    char atcgBases[4] = {'A', 'T', 'C', 'G'};
+    int atcgNumbers[5] = {0, 0, 0, 0, 0};
+    char atcgBases[5] = {'A', 'T', 'C', 'G', 'N'};
     int pos = 0;
     for(pos = 0; pos < rlen; ++pos){
         switch(data[rlen - 1 -pos]){
@@ -66,40 +67,37 @@ void PolyX::trimPolyX(Read* r, int compareReq, FilterResult* fr){
             case 'G':
                 ++atcgNumbers[3];
                 break;
-            case 'N':
-                for(int i = 0; i < 4; ++i){
-                    ++atcgNumbers[i];
-                }
-                break;
             default:
+                ++atcgNumbers[4];
                 break;
         }
         int cmp = (pos + 1);
-        int allowedMismatch = std::min(maxMismatch, cmp/allowedOneMismatchForEach);
+        int allowedMismatch = std::min(maxMismatch, std::max(1, cmp/allowedOneMismatchForEach));
         bool needToBreak = true;
-        for(int b = 0; b < 4; ++b){
+        for(int b = 0; b < 5; ++b){
             if(cmp - atcgNumbers[b] <= allowedMismatch){
                 needToBreak = false;
             }
         }
-        if(needToBreak && (pos >= allowedOneMismatchForEach || pos + 1 >= compareReq - 1)){
+        if(needToBreak){
             break;
         }
     }
 
-    if(pos + 1 >- compareReq){
+    if(pos + 1 >= compareReq){
         int poly = 0;
         int maxCount = -1;
-        for(int b = 0; b < 4; ++b){
+        for(int b = 0; b < 5; ++b){
             if(atcgNumbers[b] > maxCount){
                 maxCount = atcgNumbers[b];
                 poly = b;
             }
         }
         char polyBase = atcgBases[poly];
-        while(data[rlen - pos - 1] != polyBase && pos >= 0){
+        while(data[rlen - pos - 1] != polyBase && pos > 0){
             --pos;
         }
+        std::cerr << r->name << ":\n" << r->seq.seqStr << "\n" << r->seq.seqStr.substr(rlen - pos - 1) << std::endl << std::endl;
         r->resize(rlen - pos - 1);
         if(fr){
             fr->addPolyXTrimmed(poly, pos + 1);
