@@ -31,7 +31,6 @@ void PolyX::trimPolyG(Read* r, int compareReq, FilterResult* fr){
         }
     }
     if(i + 1 >= compareReq){
-        std::cerr << r->name << ":\n" << r->seq.seqStr << "\n" << r->seq.seqStr.substr(firstGpos) << std::endl << std::endl;
         r->resize(firstGpos);
         if(fr){
             fr->addPolyXTrimmed(3, rlen - firstGpos);
@@ -97,7 +96,6 @@ void PolyX::trimPolyX(Read* r, int compareReq, FilterResult* fr){
         while(data[rlen - pos - 1] != polyBase && pos > 0){
             --pos;
         }
-        std::cerr << r->name << ":\n" << r->seq.seqStr << "\n" << r->seq.seqStr.substr(rlen - pos - 1) << std::endl << std::endl;
         r->resize(rlen - pos - 1);
         if(fr){
             fr->addPolyXTrimmed(poly, pos + 1);
