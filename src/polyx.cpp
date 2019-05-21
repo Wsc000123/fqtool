@@ -93,7 +93,6 @@ void PolyX::trimPolyX(Read* r, std::string trimChr, int compareReq, int maxMisma
         while(data[rlen - pos - 1] != polyBase && pos > 0){
             --pos;
         }
-        std::cerr << r->name << ":\n" << r->seq.seqStr << "\n" << r->seq.seqStr.substr(rlen - pos - 1) << std::endl << std::endl;
         r->resize(rlen - pos - 1);
         if(fr){
             fr->addPolyXTrimmed(poly, pos + 1);

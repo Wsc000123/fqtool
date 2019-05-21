@@ -73,7 +73,7 @@ FilterResult* FilterResult::merge(std::vector<FilterResult*>& list){
         result->mMergedPairs += list[i]->mMergedPairs;
 
         // update mTrimmedPolyXBases/Reads
-        for(int b = 0; b < 4; ++b){
+        for(int b = 0; b < 5; ++b){
             result->mTrimmedPolyXBases[b] += list[i]->mTrimmedPolyXBases[b];
             result->mTrimmedPolyXReads[b] += list[i]->mTrimmedPolyXReads[b];
         }
