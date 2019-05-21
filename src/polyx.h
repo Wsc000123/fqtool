@@ -21,6 +21,8 @@ class PolyX{
          * @param r1 pointer to Read object(read1)
          * @param r2 pointer to Read object(read2)
          * @param compareReq required length of sequence to be polyG
+         * @param maxMismatch max mismatches allowed for a sequence against G
+         * @param allowedOneMismatchForEach max mismatches allowed for each allowedOneMismatchForEach bases against G
          * @param fr pointer to FilterResult object
          */
         static void trimPolyG(Read* r1, Read* r2, int compareReq, int maxMismatch, int allowedOneMismatchForEach, FilterResult* fr = NULL);
@@ -30,6 +32,8 @@ class PolyX{
          * if at most 1 mismatch for each 8 bases, and l >= compareReq, trim it
          * @param r pointer to Read object
          * @param compareReq required length of sequence to be polyG
+         * @param maxMismatch max mismatches allowed for a sequence against G
+         * @param allowedOneMismatchForEach max mismatches allowed for each allowedOneMismatchForEach bases against G
          * @param fr pointer to FilterResult object
          */
         static void trimPolyG(Read* r, int compareReq, int maxMismatch, int allowedOneMismatchForEach, FilterResult* fr = NULL);
@@ -39,7 +43,10 @@ class PolyX{
          * if at most 1 mismatch for each 8 bases, and l >= compareReq, trim it
          * @param r1 pointer to Read object(read1)
          * @param r2 pointer to Read object(read2)
-         * @param compareReq required length of sequence to be polyG
+         * @param trimChr nucleotides to be trimmed
+         * @param compareReq required length of sequence to be polyX
+         * @param maxMismatch max mismatches allowed for a sequence against X
+         * @param allowedOneMismatchForEach max mismatches allowed for each allowedOneMismatchForEach bases against X
          * @param fr pointer to FilterResult object
          */
         static void trimPolyX(Read* r1, Read* r2, std::string trimChr,  int compareReq, int maxMismatch, int allowedOneMismatchForEach, FilterResult* fr = NULL);
@@ -48,7 +55,10 @@ class PolyX{
          * if at most 5 mismatch in length l, and l >= compareReq, trim it
          * if at most 1 mismatch for each 8 bases, and l >= compareReq, trim it
          * @param r pointer to Read object
-         * @param compareReq required length of sequence to be polyG
+         * @param trimChr nucleotides to be trimmed
+         * @param compareReq required length of sequence to be polyX
+         * @param maxMismatch max mismatches allowed for a sequence against X
+         * @param allowedOneMismatchForEach max mismatches allowed for each allowedOneMismatchForEach bases against X
          * @param fr pointer to FilterResult object
          */
         static void trimPolyX(Read* r, std::string trimChr, int compareReq, int maxMismatch, int allowedOneMismatchForEach, FilterResult* fr = NULL);
