@@ -56,8 +56,8 @@ Usage: fqtool [OPTIONS]
 |  --cut_right_mean_qual INT in [1 - 36]=20 Needs: --enable_cut_tail           |  mean quality to cut right
 |Qual:
 |  -q                                                                          |  enable quality filter
-|  -Q INT in [33 - 75]=0 Needs: -q                                             |  minimum ASCII Quality for qualified bases,
-|  -U INT in [0 - 1]=0.3 Needs: -q                                             |  maximum low quality ratio allowed in one read
+|  -Q INT in [33 - 75]=20 Needs: -q                                             |  minimum ASCII Quality for qualified bases,
+|  -U INT in [0 - 1]=0.15 Needs: -q                                             |  maximum low quality ratio allowed in one read
 |  -N INT=5 Needs: -q                                                          |  maximum N bases allowed in one read
 |  -e FLOAT Needs: -q                                                          |  average quality needed for one read
 |Length:
