@@ -136,4 +136,6 @@ fqtool is modified from [fastp](https://github.com/OpenGene/fastp) with many enc
 4. buffer size arguments are externalized as well  
 5. umi use standardized OX:Z tag and umi quality use standarzied BZ:Z to append as comments after readnames  
 6. fastq readnumber estimation and overlap analysis fixedup  
-7. almost all class/functions have been annnotated, haha ~  
+7. polyG and polyX trimming method corrected and add much more control over what and how to trim
+8. polyG/X trimming results are also displayed in html report now
+9. almost all class/functions have been annnotated, haha ~  
