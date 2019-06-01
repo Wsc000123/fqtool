@@ -29,7 +29,7 @@ namespace util{
      * @param pre substring
      * @return true if str starts with pre
      */
-    inline bool starts_with(const std::string& str, const std::string& pre){
+    inline bool startsWith(const std::string& str, const std::string& pre){
         if(str.length() < pre.length()){
             return false;
         }else{
@@ -42,7 +42,7 @@ namespace util{
      * @param suf substring
      * @return true if str ends with suf
      */
-    inline bool ends_with(const std::string& str, const std::string& suf){
+    inline bool endsWith(const std::string& str, const std::string& suf){
         if(str.length() < suf.length()){
             return false;
         }else{
@@ -300,7 +300,7 @@ namespace util{
     /** exit and print string to std::cerr
      * @param msg string to print to std::cerr
      */
-    inline void error_exit(const std::string& msg){
+    inline void errorExit(const std::string& msg){
         std::cerr << "ERROR: " << msg << std::endl;
         exit(-1);
     }
@@ -308,12 +308,12 @@ namespace util{
     /** check a file existence status, if not exists, exit 
      * @param path string of file/directory
      */
-    inline void valid_file(const std::string& path){
+    inline void validFile(const std::string& path){
         if(util::isdir(path)){
-            util::error_exit("this is not a file path!");
+            util::errorExit("this is not a file path!");
         }
         if(!util::isfile(path)){
-            util::error_exit("file does not exist");
+            util::errorExit("file does not exist");
         }
     }
 
@@ -355,7 +355,7 @@ namespace util{
      * @param str string to be filtered
      * @return a string without non-alpha characters
      */
-    inline std::string get_alpha(const std::string& str){
+    inline std::string getAlpha(const std::string& str){
         std::string ret;
         std::copy_if(str.cbegin(), str.cend(), std::back_inserter(ret), (int(*)(int))std::isalpha);
         return ret;
@@ -365,7 +365,7 @@ namespace util{
      * @param str string to be filtered
      * @param upper convert result to uppercase if true
      */
-    inline void get_valid(std::string& str, bool upper = false){
+    inline void getValid(std::string& str, bool upper = false){
         uint16_t total = 0;
         for(uint16_t i = 0; i < str.size(); ++i){
             if(std::isalpha(str[i]) || str[i] == '-' || str[i] == '*'){
@@ -454,7 +454,7 @@ namespace util{
      * @param seq a nucleotide sequence
      * @return the reverse completement sequence of seq
      */
-    inline std::string reverseComplete(const std::string& seq){
+    inline std::string reverseComplement(const std::string& seq){
         std::string retSeq(seq.length(), '\0');
         for(int32_t i = retSeq.length() - 1; i >= 0; --i){
             retSeq[i] = complement(seq[seq.length() - 1 - i]);
@@ -495,7 +495,7 @@ namespace util{
      * @return true if e in v
      */
     template<typename T>
-    inline bool in_vector(const std::vector<T>& v, const T& e){
+    inline bool inVector(const std::vector<T>& v, const T& e){
         return std::find(v.cbegin(), v.cend(), e) != v.cend();
     }
 
@@ -527,7 +527,7 @@ namespace util{
      * @param path string of path
      * @param vname vector to store contents under path
      */
-    inline void list_dir(const std::string& path, std::vector<std::string>& vname){
+    inline void listDir(const std::string& path, std::vector<std::string>& vname){
         std::string dirpath = util::replace(path, "~", std::string(std::getenv("HOME")) + "/");
         DIR *dir;
         struct dirent *ent;
@@ -545,7 +545,7 @@ namespace util{
      * @param n array name to show
      */
     template<typename T>
-    inline void show_array(const T* a, uint16_t l, const std::string& n){
+    inline void showArray(const T* a, uint16_t l, const std::string& n){
         std::cout << n << ":";
         for(uint16_t i = 0; i < l; ++i){
             std::cout << a[i] << " ";
@@ -557,7 +557,7 @@ namespace util{
      * @param str a string
      * @return different neighbor pairs in this string
      */
-    inline int neighbor_diff_count(const std::string& str){
+    inline int neighborDiffCount(const std::string& str){
         int diff = 0;
         for(uint32_t i = 0; i < str.length() - 1; ++i){
             if(str[i] != str[i+1]){
@@ -565,6 +565,56 @@ namespace util{
             }
         }
         return diff;
+    }
+    
+    /** get mismatch ratio of two uncleotide sequence
+     * @param s1 nucleotide sequence
+     * @param s2 nucleotide sequence
+     * @return mismatch ratio to the shorter string
+     */
+    inline float mismatchRatio(const std::string& s1, const std::string& s2){
+        uint32_t minLen = std::min(s1.length(), s2.length());
+        if(minLen == 0 || s1.find_first_of("ATCG") == std::string::npos || s2.find_first_of("ATCG") == std::string::npos){
+            return 1.0;
+        }
+        if(minLen == 1){
+            return s1[0] == s2[0];
+        }
+        size_t beg = 0;
+        for(beg = 0; beg < minLen; ++beg){
+            if(s1[beg] == 'N' || s2[beg] == 'N'){
+                ++beg;
+            }
+        }
+        size_t end = minLen - 1;
+        for(end = minLen - 1; end > beg; --end){
+            if(s1[end] == 'N' || s2[end] == 'N'){
+                --end;
+            }
+        }
+        int32_t mismatch = 0;
+        for(uint32_t i = beg; i <= end; ++i){
+            if(s1[i] == 'N' || s2[i] == 'N'){
+                continue;
+            }
+            if(s1[i] != s2[i]){
+                ++mismatch;
+            }
+        }
+        return float(mismatch)/(end - beg + 1);
+    }
+
+    /** get median of a list of values
+     * @param v a vector of values
+     * @return median of values in v
+     */
+    template<typename T>
+    inline double median(std::vector<T>& v){
+        std::nth_element(v.begin(), v.begin() + v[v.size()/2], v.end()); 
+        if(v.size() % 2 == 0){
+            return (v[v.size()/2] + v[v.size()/2 -1]) / 2.0;
+        }
+        return v[v.size()/2];
     }
 }
 

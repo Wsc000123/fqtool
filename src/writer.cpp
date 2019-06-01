@@ -34,7 +34,7 @@ std::string Writer::getFilename(){
 }
 
 void Writer::init(){
-    if(util::ends_with(mFilename, ".gz")){
+    if(util::endsWith(mFilename, ".gz")){
         mGzFile = gzopen(mFilename.c_str(), "w");
         gzsetparams(mGzFile, mCompressLevel, Z_DEFAULT_STRATEGY);
         gzbuffer(mGzFile, 1024 * 1024);

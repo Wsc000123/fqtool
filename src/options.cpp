@@ -44,7 +44,7 @@ void Options::update(int argc, char** argv){
     qualFilter.lowQualityBaseLimit = qualFilter.lowQualityRatio * est.seqLen1;
     // validate umi options
     if(umi.enabled && (umi.location == 3 || umi.location == 4 || umi.location == 6) && umi.length == 0){
-        util::error_exit("umi length can not be zero if it's in read1/2");
+        util::errorExit("umi length can not be zero if it's in read1/2");
     }
     // update polyx
     util::str2upper(polyXTrim.trimChr);
@@ -61,12 +61,12 @@ void Options::validate(){
     // validate merged file
     if(mergePE.enabled){
         if(mergePE.out.empty()){
-            util::error_exit("merged file output must be provided!");
+            util::errorExit("merged file output must be provided!");
         }
     }
     // validate polyX
     if(polyXTrim.trimChr.find_first_not_of("ATCGN") != std::string::npos){
-        util::error_exit("Can only trim nucleotides ATCGN");
+        util::errorExit("Can only trim nucleotides ATCGN");
     }
 }
 
@@ -79,11 +79,11 @@ void Options::initIndexFilter(const std::string& blacklistFile1, const std::stri
         return;
     }
     if(!blacklistFile1.empty()){
-        util::valid_file(blacklistFile1);
+        util::validFile(blacklistFile1);
         indexFilter.blacklist1 = makeListFromFileByLine(blacklistFile1);
     }
     if(!blacklistFile2.empty()){
-        util::valid_file(blacklistFile2);
+        util::validFile(blacklistFile2);
         indexFilter.blacklist2 = makeListFromFileByLine(blacklistFile2);
     }
     if(indexFilter.blacklist1.empty() && indexFilter.blacklist2.empty()){
@@ -100,7 +100,7 @@ std::vector<std::string> Options::makeListFromFileByLine(const std::string& file
     while(std::getline(fr, line)){
         util::strip(line);
         if(line.find_first_not_of("ATCG") != std::string::npos){
-            util::error_exit("processing " + filename + ", each line should be one index, which can only contain A/T/C/G");
+            util::errorExit("processing " + filename + ", each line should be one index, which can only contain A/T/C/G");
         }
         ret.push_back(line);
     }

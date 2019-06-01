@@ -69,9 +69,9 @@ void Evaluator::evaluateTwoColorSystem(){
         return;
     }
     // NEXTSEQ500, NEXTSEQ 550, NOVASEQ are two color system and with specific fastq read name pattern
-    if(util::starts_with(r->name, "@NS") || 
-       util::starts_with(r->name, "@NB") || 
-       util::starts_with(r->name, "@A0")){
+    if(util::startsWith(r->name, "@NS") || 
+       util::startsWith(r->name, "@NB") || 
+       util::startsWith(r->name, "@A0")){
        delete r;
        mOptions->est.twoColorSystem = true;
        return;

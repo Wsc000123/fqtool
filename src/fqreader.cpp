@@ -43,7 +43,7 @@ void FqReader::readToBuf(){
 }
 
 void FqReader::init(){
-    if(util::ends_with(mFileName, ".gz")){
+    if(util::endsWith(mFileName, ".gz")){
         mGzipFile = ::gzopen(mFileName.c_str(), "r");
         mZipped = true;
         ::gzrewind(mGzipFile);
@@ -54,7 +54,7 @@ void FqReader::init(){
             mFile = std::fopen(mFileName.c_str(), "rb");
         }
         if(mFile == NULL){
-            util::error_exit("Failed to open file: " + mFileName);
+            util::errorExit("Failed to open file: " + mFileName);
         }
         mZipped = false;
     }
@@ -209,8 +209,8 @@ void FqReader::close(){
 
 bool FqReader::isZippedFq(const std::string& filename){
     // just use the suffix of filename to determine its format
-    if(util::ends_with(filename, ".fastq.gz") || util::ends_with(filename, ".fq.gz") ||
-       util::ends_with(filename, ".fasta.gz") || util::ends_with(filename, ".fa.gz")){
+    if(util::endsWith(filename, ".fastq.gz") || util::endsWith(filename, ".fq.gz") ||
+       util::endsWith(filename, ".fasta.gz") || util::endsWith(filename, ".fa.gz")){
         return true;
     }
     return false;
@@ -218,8 +218,8 @@ bool FqReader::isZippedFq(const std::string& filename){
 
 bool FqReader::isfq(const std::string& filename){
     // just use the suffix of filename to determine its format
-    if(util::ends_with(filename, ".fastq") || util::ends_with(filename, ".fq") ||
-       util::ends_with(filename, ".fasta") || util::ends_with(filename, ".fa")){
+    if(util::endsWith(filename, ".fastq") || util::endsWith(filename, ".fq") ||
+       util::endsWith(filename, ".fasta") || util::endsWith(filename, ".fa")){
         return true;
     }
     return false;
